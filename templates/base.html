@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}BTC Predictor v3{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e17;--s1:#0f172a;--s2:#1e293b;--bd:rgba(255,255,255,.08);--t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--t4:#475569;--g:#00ff88;--g2:#34d399;--r:#ff3366;--r2:#fb7185;--b:#6366f1;--b2:#818cf8;--y:#f59e0b;--o:#f7931a;--cyan:#00d4ff;--neon-green:#00ff88;--neon-red:#ff3366;--neon-cyan:#00d4ff;--glass:rgba(15,23,42,.6);--glass-border:rgba(255,255,255,.08);--glass-blur:blur(12px)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'JetBrains Mono',monospace;min-height:100vh;background-image:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(0,212,255,.03) 0%,transparent 50%)}
+.c{max-width:1080px;margin:0 auto;padding:16px}
+.card{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:14px;padding:18px;border:1px solid var(--glass-border);margin-bottom:14px}
+.lbl{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.g5{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.sc{text-align:center}
+.sv{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700}
+.sl{font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:3px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.logo{display:flex;align-items:center;gap:10px}
+.li{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--o),#ff6b00);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff}
+.lt h1{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.5px}
+.lt span{font-size:9px;color:var(--b);letter-spacing:1.5px;text-transform:uppercase}
+.sb{font-size:11px;padding:3px 10px;border-radius:16px;font-weight:600}
+.sb.up{background:rgba(16,185,129,.15);color:var(--g)}
+.sb.dn{background:rgba(239,68,68,.15);color:var(--r)}
+.rb{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.rb.LOW{background:rgba(16,185,129,.15);color:var(--g)}
+.rb.MEDIUM{background:rgba(245,158,11,.15);color:var(--y)}
+.rb.HIGH{background:rgba(239,68,68,.15);color:var(--r)}
+.cbar{height:8px;background:rgba(30,41,59,.8);border-radius:4px;overflow:hidden;margin:8px 0}
+.cfill{height:100%;border-radius:4px;transition:width .6s ease,background .3s ease}
+.footer{text-align:center;padding:16px;font-size:9px;color:var(--t4);line-height:1.8}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes gl{0%,100%{box-shadow:0 0 15px rgba(99,102,241,.2)}50%{box-shadow:0 0 30px rgba(99,102,241,.4)}}
+/* ── Header Streak Dots ── */
+.hdr-streak-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 1.5px;transition:all .3s;vertical-align:middle}
+.hdr-streak-dot.w{background:var(--neon-green);box-shadow:0 0 6px rgba(0,255,136,.5)}
+.hdr-streak-dot.l{background:var(--neon-red);box-shadow:0 0 6px rgba(255,51,102,.5)}
+.hdr-streak-dot.ghost{width:6px;height:6px;opacity:.5}
+.hdr-streak-dot.ghost.w{background:var(--neon-green);box-shadow:none}
+.hdr-streak-dot.ghost.l{background:var(--neon-red);box-shadow:none}
+@keyframes su{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* Nav */
+.nav{display:flex;gap:4px;background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:12px;padding:4px;border:1px solid var(--glass-border);margin-bottom:16px}
+.nav a{flex:1;text-align:center;padding:10px 8px;font-size:11px;letter-spacing:1px;text-decoration:none;color:var(--t3);border-radius:9px;font-weight:600;transition:all .2s}
+.nav a:hover{color:var(--t1);background:rgba(99,102,241,.08)}
+.nav a.active{color:var(--neon-cyan);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15)}
+/* Mini status bar */
+.mini-status{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11px;margin-bottom:14px;padding:10px 16px;background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:10px;border:1px solid var(--glass-border)}
+.mini-status .dot{width:7px;height:7px;border-radius:50%;background:var(--g);animation:p 2s infinite;display:inline-block;margin-right:4px}
+@media(max-width:600px){.c{padding:10px}.nav{flex-wrap:wrap}.nav a{font-size:10px;padding:8px 4px}}
+{% block extra_css %}{% endblock %}
+</style>
+</head>
+<body>
+<div class="c">
+  <!-- Header -->
+  <div class="hdr">
+    <div class="logo">
+      <div class="li">&#8383;</div>
+      <div class="lt">
+        <h1>BTC Predictor v3</h1>
+        <span>5-Min Market &bull; Chainlink + IA Principal</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;font-size:11px">
+      <span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--g);animation:p 2s infinite;display:inline-block"></span>
+      <span style="color:var(--t3)">LIVE</span>
+      <span style="color:var(--t2)" id="st">&mdash;</span>
+    </div>
+  </div>
+
+  {% if active_page != 'config' %}
+  <!-- ═══ STICKY HEADER GLOBAL ═══ -->
+  <div id="sticky-header" style="position:sticky;top:0;z-index:9999;background:rgba(10,14,23,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--glass-border);padding:10px 20px;margin:0 -16px 15px -16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,0.5)">
+    <div style="display:flex;align-items:center;gap:15px">
+      <div style="text-align:center"><div style="font-size:8px;color:var(--t4);letter-spacing:1px;margin-bottom:2px">VENTANA <span id="stk-wid" style="color:var(--t2);font-weight:700">--</span></div><div id="stk-tm" style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700" class="smooth-value">--:--</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="text-align:right"><div style="font-size:8px;color:var(--t4);letter-spacing:1px;margin-bottom:2px">BTC/USD <span id="stk-pa" style="color:var(--t2)">--</span></div><div id="stk-cp" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff" class="smooth-value">$----.--</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:15px">
+      <div style="text-align:right"><div style="font-size:8px;color:var(--t4);letter-spacing:1px;margin-bottom:2px">BALANCE</div><div id="stk-bal" style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--neon-cyan)" class="smooth-value">$----.--</div></div>
+    </div>
+  </div>
+  <!-- ── Streak Row (below sticky header) ── -->
+  <div id="stk-streak-row" style="position:sticky;top:52px;z-index:9998;background:rgba(10,14,23,0.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--glass-border);padding:5px 20px;margin:0 -16px 0 -16px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.3)">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:7px;color:var(--t4);letter-spacing:1.5px;font-weight:600">REAL</span>
+      <span id="stk-streak-real" style="display:flex;align-items:center;gap:1px"></span>
+      <span id="stk-streak-wr" style="font-size:9px;font-weight:600;margin-left:4px" class="smooth-value">--</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:7px;color:var(--t4);letter-spacing:1.5px;font-weight:600">GHOST</span>
+      <span id="stk-streak-ghost" style="display:flex;align-items:center;gap:1px"></span>
+      <span id="stk-streak-gwr" style="font-size:9px;font-weight:600;color:var(--t4);margin-left:4px" class="smooth-value">--</span>
+    </div>
+  </div>
+  {% if active_page != 'dashboard' %}
+  <script>
+    let _stkGlobalEndTime = null;
+    function fmStk(n,d=2){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+    function _renderHeaderStreaks(results){
+      if(!results||!results.length) return;
+      const real=results.filter(r=>!r.is_ghost).slice(0,20);
+      const ghost=results.filter(r=>r.is_ghost).slice(0,15);
+      const realEl=document.getElementById('stk-streak-real');
+      const ghostEl=document.getElementById('stk-streak-ghost');
+      const wrEl=document.getElementById('stk-streak-wr');
+      const gwrEl=document.getElementById('stk-streak-gwr');
+      if(realEl){
+        let h='';real.slice().reverse().forEach(r=>{h+='<span class="hdr-streak-dot '+(r.won?'w':'l')+'"></span>'});
+        realEl.innerHTML=h;
+      }
+      if(ghostEl){
+        let h='';ghost.slice().reverse().forEach(r=>{h+='<span class="hdr-streak-dot ghost '+(r.won?'w':'l')+'"></span>'});
+        ghostEl.innerHTML=h;
+      }
+      if(wrEl && real.length>0){
+        const wins=real.filter(r=>r.won).length;
+        const pct=Math.round(wins/real.length*100);
+        wrEl.textContent=wins+'/'+real.length+' ('+pct+'%)';
+        wrEl.style.color=pct>=55?'var(--neon-green)':pct>=45?'var(--y)':'var(--neon-red)';
+      }
+      if(gwrEl && ghost.length>0){
+        const gw=ghost.filter(r=>r.won).length;
+        const gpct=Math.round(gw/ghost.length*100);
+        gwrEl.textContent=gw+'/'+ghost.length+' ('+gpct+'%)';
+        gwrEl.style.color=gpct>=55?'rgba(0,255,136,.5)':gpct>=45?'var(--t4)':'rgba(255,51,102,.5)';
+      }
+    }
+    async function pollSticky(){
+      try{
+        const r=await fetch('/api/state');
+        const s=await r.json();
+        const w=s.window;
+        if(w){
+          if(w.end_time) _stkGlobalEndTime=w.end_time;
+          const wIdEl=document.getElementById('stk-wid'); if(wIdEl) wIdEl.textContent = w.id || '--';
+          const cpEl=document.getElementById('stk-cp'); if(cpEl) cpEl.textContent = '$'+fmStk(w.current_price);
+          const up=w.price_diff>=0;
+          const pa=document.getElementById('stk-pa');
+          if(pa){
+            pa.textContent = up ? '\u25B2' : '\u25BC';
+            pa.style.color = up ? 'var(--neon-green)' : 'var(--neon-red)';
+          }
+        }
+        const pb=s.portfolio ? s.portfolio.balance : 0;
+        const balEl=document.getElementById('stk-bal'); if(balEl) balEl.textContent='$' + fmStk(pb);
+        _renderHeaderStreaks(s.results);
+      }catch(e){}
+    }
+    setInterval(pollSticky, 1500);
+    pollSticky();
+    setInterval(()=>{
+      if(!_stkGlobalEndTime) return;
+      const remainingSec=Math.max(0,Math.floor((_stkGlobalEndTime*1000-Date.now())/1000));
+      const mn2=Math.floor(remainingSec/60);
+      const sc2=remainingSec%60;
+      const t2=document.getElementById('stk-tm');
+      if(t2){
+        t2.textContent=mn2+':'+String(sc2).padStart(2,'0');
+        t2.style.color=(remainingSec<30?'var(--neon-red)':remainingSec<60?'var(--y)':'var(--neon-green)');
+      }
+    },1000);
+  </script>
+  {% endif %}
+  {% endif %}
+
+  <!-- Navigation -->
+  <div class="nav">
+    <a href="/" class="{% if active_page == 'dashboard' %}active{% endif %}">DASHBOARD</a>
+    <a href="/history" class="{% if active_page == 'history' %}active{% endif %}">HISTORIAL</a>
+    <a href="/brain" class="{% if active_page == 'brain' %}active{% endif %}">CEREBRO AI</a>
+    <a href="/config" class="{% if active_page == 'config' %}active{% endif %}">CONFIG</a>
+  </div>
+
+  {% block content %}{% endblock %}
+
+  <div class="footer">
+    Simulacion educativa &bull; No es asesoramiento financiero<br>
+    Precios: Chainlink BTC/USD via Polymarket RTDS &bull; Motor: Cerebro Principal Agnostico
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function fm(n,d=2){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function escapeHtml(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+{% block scripts %}{% endblock %}
+</script>
+</body>
+</html>

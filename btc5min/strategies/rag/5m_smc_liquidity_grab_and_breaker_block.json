@@ -1,0 +1,16 @@
+{
+  "strategy_name": "5m SMC Liquidity Grab & Breaker Block",
+  "concept_family": "SMC",
+  "optimal_context": {
+    "sentiment": "fear",
+    "volatility": "high",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Identificar una piscina de liquidez en un Swing High o Swing Low reciente (zonas donde los retailers ponen Stop Loss).",
+    "Observar un movimiento agudo (Liquidity Grab) que cruza el Swing High/Low pero es rechazado rápidamente, sin volumen sostenido.",
+    "Confirmar un Cambio de Carácter (CHOCH) en dirección opuesta que atraviese y rompa el último Order Block válido (creando un Breaker Block).",
+    "Colocar orden de entrada en el retesteo del Breaker Block recién formado."
+  ],
+  "invalidation_condition": "El precio vuelve a cruzar y cierra más allá del pico máximo/mínimo que generó la cacería de liquidez."
+}

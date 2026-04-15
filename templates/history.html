@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+{% block title %}BTC Predictor — Historial de Apuestas{% endblock %}
+{% block extra_css %}
+/* History table styles */
+.hist-table{width:100%;border-collapse:collapse;font-size:11px}
+.hist-table th{font-size:9px;color:var(--t4);letter-spacing:1.5px;text-align:left;padding:8px 6px;border-bottom:2px solid var(--bd);text-transform:uppercase;position:sticky;top:0;background:var(--s1);z-index:1}
+.hist-table td{padding:7px 6px;border-bottom:1px solid rgba(30,30,56,.5);color:var(--t2);white-space:nowrap}
+.hist-table tr:hover td{background:rgba(99,102,241,.03)}
+/* Badges */
+.badge{font-size:8px;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.5px;display:inline-block;white-space:nowrap}
+.badge-agent{background:rgba(99,102,241,.15);color:var(--b2)}
+.badge-ml{background:rgba(16,185,129,.08);color:var(--g);font-size:9px}
+.badge-ghost{background:rgba(113,113,122,.2);color:var(--t3)}
+.badge-real{background:rgba(16,185,129,.12);color:var(--g)}
+.badge-shadow{background:rgba(245,158,11,.12);color:var(--y)}
+.badge-win{background:rgba(16,185,129,.15);color:var(--g);font-weight:700}
+.badge-loss{background:rgba(239,68,68,.12);color:var(--r);font-weight:700}
+.badge-rag{background:rgba(168,85,247,.12);color:#a855f7;max-width:100px;overflow:hidden;text-overflow:ellipsis}
+.badge-persona{background:rgba(251,146,60,.15);color:#fb923c;max-width:100px;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.badge-primary{background:rgba(139,92,246,.15);color:#a78bfa;max-width:100px;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-box{background:var(--bg);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--bd)}
+.stat-box .sb-label{font-size:9px;color:var(--t4);letter-spacing:1.2px;margin-bottom:5px;font-weight:600}
+.stat-box .sb-value{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700}
+.stat-box .sb-sub{font-size:10px;color:var(--t3);margin-top:3px}
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{background:var(--s2);border:1px solid var(--bd);color:var(--t3);font-size:10px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{color:var(--b2);border-color:var(--b);background:rgba(99,102,241,.08)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:700px){
+  .stat-row{grid-template-columns:1fr 1fr}
+  .hist-table{font-size:10px}
+  .hist-table th,.hist-table td{padding:5px 4px}
+}
+{% endblock %}
+
+{% block content %}
+<div class="card" style="padding:18px">
+  <!-- Stats row 1: General -->
+  <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+    <div class="stat-box">
+      <div class="sb-label">TRADES TOTALES</div>
+      <div class="sb-value" id="h-total">--</div>
+      <div class="sb-sub" id="h-total-sub">reales + ghost + shadow</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">PnL TOTAL</div>
+      <div class="sb-value" id="h-pnl">--</div>
+      <div class="sb-sub" id="h-trades">-- trades</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">WIN RATE</div>
+      <div class="sb-value" id="h-wr">--%</div>
+      <div class="sb-sub" id="h-wr-detail">--/--</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">GHOST TRADES</div>
+      <div class="sb-value" id="h-ghost">--</div>
+      <div class="sb-sub" id="h-ghost-wr">WR: --%</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">ML READINESS</div>
+      <div class="sb-value" id="h-ml">--</div>
+      <div class="sb-sub" id="h-ml-sub">-- muestras</div>
+    </div>
+  </div>
+
+  <!-- Stats row 2: Rachas (last 30 bets) -->
+  <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:16px">
+    <div class="stat-box" id="streak-box" style="border-left:3px solid var(--t4)">
+      <div class="sb-label">RACHA ACTUAL</div>
+      <div class="sb-value" id="h-streak">--</div>
+      <div class="sb-sub" id="h-streak-sub">--</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">MEJOR RACHA W</div>
+      <div class="sb-value" style="color:var(--g)" id="h-best-win">--</div>
+      <div class="sb-sub">en ultimas 30</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">PEOR RACHA L</div>
+      <div class="sb-value" style="color:var(--r)" id="h-worst-loss">--</div>
+      <div class="sb-sub">en ultimas 30</div>
+    </div>
+    <div class="stat-box">
+      <div class="sb-label">ULTIMAS 30</div>
+      <div class="sb-value" id="h-r30-wr">--%</div>
+      <div class="sb-sub" id="h-r30-pnl">PnL: --</div>
+    </div>
+  </div>
+
+  <!-- Per-agent breakdown -->
+  <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:16px;border:1px solid var(--bd)">
+    <div style="font-size:9px;color:var(--t4);letter-spacing:1.2px;font-weight:600;margin-bottom:8px">RENDIMIENTO POR AGENTE</div>
+    <div id="agent-breakdown" style="display:flex;flex-direction:column;gap:2px">
+      <span style="color:var(--t4);font-size:10px">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:9px;color:var(--t4);letter-spacing:1px;font-weight:600">FILTRO:</span>
+    <button class="filter-btn active" onclick="setFilter('all',this)">TODOS</button>
+    <button class="filter-btn" onclick="setFilter('real',this)">REALES</button>
+    <button class="filter-btn" onclick="setFilter('ghost',this)">GHOST</button>
+    <button class="filter-btn" onclick="setFilter('shadow',this)">SHADOW</button>
+    <button class="filter-btn" onclick="setFilter('pending',this)">EN VIVO</button>
+    <span style="margin-left:auto;font-size:9px;color:var(--t4)" id="h-count">--</span>
+  </div>
+
+  <!-- Table -->
+  <div style="max-height:800px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--s2) transparent">
+    <table class="hist-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>#</th>
+          <th>HORA</th>
+          <th>AGENTE / IA</th>
+          <th>PRED</th>
+          <th>CONF</th>
+          <th>RAG USADA</th>
+          <th>ML</th>
+          <th>MONTO</th>
+          <th>PnL</th>
+          <th>RETORNO</th>
+          <th>TIPO</th>
+        </tr>
+      </thead>
+      <tbody id="h-body">
+        <tr><td colspan="12" style="text-align:center;color:var(--t4);padding:24px">Cargando historial...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Window Trace Viewer -->
+<div class="card" style="margin-top:16px">
+  <div class="lbl" style="margin-bottom:10px">WINDOW TRACE REPLAY</div>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <input id="wt-id" type="number" placeholder="window_id (ej: 30123)" style="width:180px;padding:6px;background:var(--bg);border:1px solid var(--bd);color:var(--t1);border-radius:4px;font-family:monospace">
+    <button id="wt-load" style="padding:6px 14px;background:var(--b2);border:0;color:#fff;border-radius:4px;cursor:pointer;font-weight:600">CARGAR</button>
+    <span id="wt-status" style="font-size:10px;color:var(--t3)"></span>
+  </div>
+  <div id="wt-summary" style="font-size:11px;color:var(--t2);margin-bottom:10px"></div>
+  <div id="wt-agents" style="font-size:11px"></div>
+  <details style="margin-top:10px"><summary style="cursor:pointer;font-size:10px;color:var(--t3)">RAW JSON</summary>
+    <pre id="wt-raw" style="font-size:10px;background:var(--bg);padding:10px;border-radius:4px;max-height:400px;overflow:auto;color:var(--t2)"></pre>
+  </details>
+</div>
+{% endblock %}
+
+{% block scripts %}
+let _histData=null;
+let _currentFilter='all';
+let _agentsMap={};     // agent_id -> agent config (incl. is_primary, display_name)
+let _primaryAgentId=null;
+
+async function loadAgentsMap(){
+  try{
+    const r=await fetch('/api/agents');
+    if(!r.ok)return;
+    const agents=await r.json();
+    _agentsMap={};
+    (agents||[]).forEach(a=>{
+      _agentsMap[a.agent_id]=a;
+      if(a.is_primary)_primaryAgentId=a.agent_id;
+    });
+  }catch(e){console.error('loadAgentsMap',e)}
+}
+
+async function loadHistory(){
+  try{
+    await loadAgentsMap();
+    const r=await fetch('/api/stats_history?limit=200');
+    if(!r.ok)return;
+    _histData=await r.json();
+    if(_histData.error)return;
+    renderStats(_histData.summary);
+    renderHistTable();
+  }catch(e){console.error('loadHistory',e)}
+}
+
+function renderStats(s){
+  $('h-total').textContent=s.total_all;
+  $('h-total-sub').textContent=s.total_real+' reales + '+s.total_ghost+' ghost + '+(s.total_shadow||0)+' shadow';
+
+  const pEl=$('h-pnl');
+  pEl.textContent=(s.total_pnl>=0?'+$':'-$')+fm(Math.abs(s.total_pnl));
+  pEl.style.color=s.total_pnl>=0?'var(--g)':'var(--r)';
+  $('h-trades').textContent=s.total_real+' trades reales';
+
+  const wrEl=$('h-wr');
+  wrEl.textContent=s.real_win_rate+'%';
+  wrEl.style.color=s.real_win_rate>=55?'var(--g)':s.real_win_rate>=45?'var(--y)':'var(--r)';
+  const rw=Math.round(s.total_real*s.real_win_rate/100);
+  $('h-wr-detail').textContent=rw+'/'+s.total_real+' ganadas';
+
+  $('h-ghost').textContent=s.total_ghost;
+  $('h-ghost-wr').textContent='WR: '+s.ghost_win_rate+'%';
+
+  $('h-ml').textContent=s.ml_readiness;
+  $('h-ml-sub').textContent=s.total_all+' muestras';
+
+  // Streak stats
+  const stk=s.current_streak||0;
+  const stype=s.streak_type||'-';
+  const sEl=$('h-streak');
+  sEl.textContent=stk+stype;
+  sEl.style.color=stype==='W'?'var(--g)':'var(--r)';
+  const sBox=$('streak-box');
+  sBox.style.borderLeftColor=stype==='W'?'var(--g)':'var(--r)';
+  $('h-streak-sub').textContent=stype==='W'?'ganando consecutivas':'perdiendo consecutivas';
+
+  $('h-best-win').textContent=s.best_win_streak||0;
+  $('h-worst-loss').textContent=s.worst_loss_streak||0;
+
+  const r30wr=$('h-r30-wr');
+  r30wr.textContent=(s.r30_win_rate||0)+'%';
+  r30wr.style.color=(s.r30_win_rate||0)>=55?'var(--g)':(s.r30_win_rate||0)>=45?'var(--y)':'var(--r)';
+  const r30p=s.r30_pnl||0;
+  $('h-r30-pnl').textContent='PnL: '+(r30p>=0?'+$':'-$')+fm(Math.abs(r30p))+' ('+s.r30_total+' trades)';
+
+  // Per-agent breakdown
+  renderAgentBreakdown();
+}
+
+function renderAgentBreakdown(){
+  if(!_histData||!_histData.table)return;
+  const byAgent={};
+  _histData.table.forEach(r=>{
+    const m=r.ai_model||_primaryAgentId||'primary';
+    if(!byAgent[m])byAgent[m]={wins:0,losses:0,pnl:0,count:0};
+    byAgent[m].count++;
+    if(r.won)byAgent[m].wins++;else byAgent[m].losses++;
+    if(!r.is_ghost&&!r.is_shadow)byAgent[m].pnl+=(r.profit||0);
+  });
+  const el=$('agent-breakdown');
+  if(!el)return;
+  let html='';
+  for(const[agent,s] of Object.entries(byAgent)){
+    const wr=s.count>0?Math.round(s.wins/s.count*100):0;
+    const color=wr>=55?'var(--g)':wr>=45?'var(--y)':'var(--r)';
+    const pColor=s.pnl>=0?'var(--g)':'var(--r)';
+    const cfg=_agentsMap[agent]||{};
+    const label=(cfg.display_name||agent.replace(/_/g,' ')).toUpperCase();
+    const primaryTag=cfg.is_primary?' <span style="color:#a78bfa;font-size:8px">&bull; PRIMARY</span>':'';
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:10px">
+      <span style="color:var(--b2);font-weight:600;min-width:110px">${label}${primaryTag}</span>
+      <span style="color:var(--t3)">${s.count} trades</span>
+      <span style="color:${color};font-weight:600">${wr}% WR</span>
+      <span style="color:${pColor};font-weight:600">${s.pnl>=0?'+':''}$${fm(Math.abs(s.pnl))}</span>
+      <span style="color:var(--t4)">(${s.wins}W/${s.losses}L)</span>
+    </div>`;
+  }
+  el.innerHTML=html||'<span style="color:var(--t4);font-size:10px">Sin datos</span>';
+}
+
+// Deterministic color assigned by agent api_type (anthropic=cyan, openai=green, local=g, other=b2 primary-like)
+function _colorForAgent(agentId){
+  const cfg=_agentsMap[agentId];
+  if(!cfg)return 'var(--b2)';
+  if(cfg.is_primary)return 'var(--b2)';        // primary = institutional blue
+  const t=(cfg.api_type||'').toLowerCase();
+  if(t==='anthropic')return 'var(--cyan)';
+  if(t==='openai')return 'var(--y)';
+  if(t==='local')return 'var(--g)';
+  return 'var(--b2)';
+}
+
+function setFilter(f,btn){
+  _currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderHistTable();
+}
+
+function utcToLocal(utcStr){
+  if(!utcStr||utcStr.length<16)return '--';
+  // created_at is stored as 'YYYY-MM-DD HH:MM:SS' in UTC
+  const d=new Date(utcStr+'Z');
+  if(isNaN(d))return utcStr.substring(11,16);
+  return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
+function renderHistTable(){
+  if(!_histData||!_histData.table){
+    $('h-body').innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--t4);padding:24px">Sin datos</td></tr>';
+    return;
+  }
+
+  let rows=_histData.table;
+  if(_currentFilter==='real') rows=rows.filter(r=>!r.is_ghost&&!r.is_shadow&&!r.is_pending);
+  else if(_currentFilter==='ghost') rows=rows.filter(r=>r.is_ghost);
+  else if(_currentFilter==='shadow') rows=rows.filter(r=>r.is_shadow);
+  else if(_currentFilter==='pending') rows=rows.filter(r=>r.is_pending);
+
+  const pendingCount=rows.filter(r=>r.is_pending).length;
+  const resolvedCount=rows.length-pendingCount;
+  $('h-count').textContent=resolvedCount+' resueltas'+(pendingCount?' + '+pendingCount+' en vivo':'');
+
+  if(!rows.length){
+    $('h-body').innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--t4);padding:24px">Sin operaciones con este filtro</td></tr>';
+    return;
+  }
+
+  const frag=document.createDocumentFragment();
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    const isPending=r.is_pending;
+    if(r.is_ghost&&!isPending)tr.style.opacity='.55';
+    if(isPending)tr.style.background='rgba(99,102,241,.04)';
+
+    // Win/Loss/Pending badge
+    const tdIcon=document.createElement('td');
+    const iconBadge=document.createElement('span');
+    if(isPending){
+      iconBadge.className='badge';
+      iconBadge.textContent='\u23F3';
+      iconBadge.style.cssText='background:rgba(99,102,241,.15);color:var(--b2);font-size:10px';
+    }else{
+      iconBadge.className='badge '+(r.won?'badge-win':'badge-loss');
+      iconBadge.textContent=r.won?'W':'L';
+    }
+    tdIcon.appendChild(iconBadge);
+    tr.appendChild(tdIcon);
+
+    // Window #
+    const tdWin=document.createElement('td');
+    tdWin.textContent='#'+r.window_id;
+    tdWin.style.color='var(--t4)';
+    tr.appendChild(tdWin);
+
+    // Time — convert UTC to local
+    const tdTime=document.createElement('td');
+    tdTime.textContent=utcToLocal(r.created_at);
+    tdTime.style.color=isPending?'var(--b2)':'var(--t3)';
+    if(isPending)tdTime.style.fontWeight='600';
+    tr.appendChild(tdTime);
+
+    // Agent/AI badge
+    const tdAgent=document.createElement('td');
+    const agentBadge=document.createElement('span');
+    agentBadge.className='badge badge-agent';
+    const model=r.ai_model||_primaryAgentId||'primary';
+    const agentCfg=_agentsMap[model]||{};
+    const modelLabel=(agentCfg.display_name||model.replace(/_/g,' ')).toUpperCase();
+    agentBadge.textContent=modelLabel;
+    const agentColor=_colorForAgent(model);
+    agentBadge.style.color=agentColor;
+    agentBadge.style.borderColor=agentColor;
+    tdAgent.appendChild(agentBadge);
+    const isPrimary=!!agentCfg.is_primary||model===_primaryAgentId;
+    const ragStr=r.rag_strategy||'';
+    const pb=document.createElement('span');
+    pb.style.display='block';
+    if(isPrimary){
+      pb.className='badge badge-primary';
+      pb.textContent=ragStr?ragStr:'SMC Base';
+      pb.title=ragStr||'Smart Money Concepts (Primary Agent)';
+    }else{
+      pb.className='badge badge-persona';
+      pb.textContent=ragStr?(ragStr.length>18?ragStr.slice(0,18)+'..':ragStr):'Base';
+      pb.title=ragStr||'Estrategia base del agente';
+    }
+    tdAgent.appendChild(pb);
+    tr.appendChild(tdAgent);
+
+    // Prediction (side vs outcome)
+    const tdPred=document.createElement('td');
+    const pred=r.side||'--';
+    const out=r.outcome||'';
+    const predSpan=document.createElement('span');
+    predSpan.textContent=(pred==='UP'?'\u25B2':'\u25BC')+' '+pred;
+    predSpan.style.color=pred==='UP'?'var(--g)':'var(--r)';
+    predSpan.style.fontWeight='600';
+    tdPred.appendChild(predSpan);
+    if(isPending){
+      const wait=document.createElement('span');
+      wait.textContent=' \u2192 ...';wait.style.color='var(--b2)';wait.style.fontSize='9px';
+      tdPred.appendChild(wait);
+    }else{
+      const vs=document.createElement('span');
+      vs.textContent=' \u2192 ';vs.style.color='var(--t4)';vs.style.fontSize='9px';
+      tdPred.appendChild(vs);
+      const outSpan=document.createElement('span');
+      outSpan.textContent=(out==='UP'?'\u25B2':out==='DOWN'?'\u25BC':'')+out;
+      outSpan.style.color=out==='UP'?'var(--g)':out==='DOWN'?'var(--r)':'var(--t4)';
+      outSpan.style.fontWeight='600';
+      tdPred.appendChild(outSpan);
+    }
+    tr.appendChild(tdPred);
+
+    // Confidence
+    const tdConf=document.createElement('td');
+    const conf=r.ai_confidence;
+    if(conf!=null){
+      tdConf.textContent=conf+'%';
+      tdConf.style.color=conf>=70?'var(--g)':conf>=50?'var(--y)':'var(--r)';
+      tdConf.style.fontWeight='600';
+      const sq=r.signal_quality||'';
+      if(sq==='LOW_QUALITY'){tdConf.style.opacity='.5';tdConf.title='LOW QUALITY'}
+    }else{tdConf.textContent='--';tdConf.style.color='var(--t4)'}
+    tr.appendChild(tdConf);
+
+    // RAG strategy used
+    const tdRag=document.createElement('td');
+    const ragName=r.rag_strategy||'';
+    if(ragName){
+      const ragBadge=document.createElement('span');
+      ragBadge.className='badge badge-rag';
+      ragBadge.textContent=ragName.length>15?ragName.slice(0,15)+'..':ragName;
+      ragBadge.title=ragName;
+      tdRag.appendChild(ragBadge);
+    }else{
+      tdRag.textContent='--';tdRag.style.color='var(--t4)';tdRag.style.fontSize='9px';
+    }
+    tr.appendChild(tdRag);
+
+    // ML Oracle
+    const tdMl=document.createElement('td');
+    if(r.ml_oracle_prob!=null){
+      const mlPct=Math.round(r.ml_oracle_prob*100);
+      const mlSkip=r.ml_skipped||false;
+      const sp=document.createElement('span');
+      sp.textContent=(mlSkip?'\uD83D\uDEE1\uFE0F ':'')+mlPct+'%';
+      sp.style.cssText='font-size:9px;padding:1px 5px;border-radius:4px;'+(mlSkip?'background:rgba(245,158,11,.1);color:#f59e0b':'background:rgba(16,185,129,.08);color:var(--g)');
+      tdMl.appendChild(sp);
+      if(mlSkip)tr.style.opacity='0.5';
+    }else{tdMl.textContent='--';tdMl.style.color='var(--t4)';tdMl.style.fontSize='9px'}
+    tr.appendChild(tdMl);
+
+    // Amount
+    const tdAmt=document.createElement('td');
+    tdAmt.textContent='$'+fm(r.amount||0);
+    tdAmt.style.fontSize='10px';
+    if(r.is_ghost)tdAmt.style.color='var(--t4)';
+    tr.appendChild(tdAmt);
+
+    // PnL with colored background
+    const tdPnl=document.createElement('td');
+    if(isPending){
+      const pendSpan=document.createElement('span');
+      pendSpan.className='badge';
+      pendSpan.textContent='EN VIVO';
+      pendSpan.style.cssText='background:rgba(99,102,241,.15);color:var(--b2);font-size:8px;animation:pulse 2s infinite';
+      tdPnl.appendChild(pendSpan);
+    }else if(r.is_ghost){
+      const ghostSpan=document.createElement('span');
+      ghostSpan.className='badge '+(r.won?'badge-win':'badge-loss');
+      ghostSpan.textContent=r.won?'ACERTO':'FALLO';
+      ghostSpan.style.fontSize='8px';
+      tdPnl.appendChild(ghostSpan);
+    }else{
+      tdPnl.textContent=(r.profit>=0?'+$':'-$')+fm(Math.abs(r.profit));
+      tdPnl.style.color=r.profit>=0?'var(--g)':'var(--r)';
+      tdPnl.style.fontWeight='600';
+      tdPnl.style.background=r.profit>=0?'rgba(16,185,129,.06)':'rgba(239,68,68,.06)';
+      tdPnl.style.borderRadius='4px';
+    }
+    tr.appendChild(tdPnl);
+
+    // Log-Return
+    const tdRet=document.createElement('td');
+    const op=r.open_price,cp=r.close_price;
+    if(op&&cp&&op>0){
+      const logRet=Math.log(cp/op)*100;
+      tdRet.textContent=(logRet>=0?'+':'')+logRet.toFixed(3)+'%';
+      tdRet.style.color=logRet>=0?'var(--g)':'var(--r)';
+      tdRet.style.fontFamily='Space Grotesk,sans-serif';
+      tdRet.style.fontSize='9px';
+    }else{tdRet.textContent='--';tdRet.style.color='var(--t4)';tdRet.style.fontSize='9px'}
+    tr.appendChild(tdRet);
+
+    // Type badge
+    const tdType=document.createElement('td');
+    const typeBadge=document.createElement('span');
+    if(isPending){typeBadge.className='badge';typeBadge.textContent='\u23F3 EN VIVO';typeBadge.style.cssText='background:rgba(99,102,241,.15);color:var(--b2);font-size:8px'}
+    else if(r.is_ghost){typeBadge.className='badge badge-ghost';typeBadge.textContent=r.is_explore?'\uD83D\uDC7B EXPLORE':'\uD83D\uDC7B GHOST'}
+    else if(r.is_shadow){typeBadge.className='badge badge-shadow';typeBadge.textContent='SHADOW'}
+    else{typeBadge.className='badge badge-real';typeBadge.textContent='REAL'}
+    tdType.appendChild(typeBadge);
+    tr.appendChild(tdType);
+
+    frag.appendChild(tr);
+  });
+
+  const tbody=$('h-body');
+  tbody.textContent='';
+  tbody.appendChild(frag);
+}
+
+async function loadWindowTrace(){
+  const wid=parseInt($('wt-id').value);
+  const st=$('wt-status');const sum=$('wt-summary');const ag=$('wt-agents');const raw=$('wt-raw');
+  if(!wid){st.textContent='Falta window_id';st.style.color='var(--r)';return}
+  st.textContent='Cargando...';st.style.color='var(--t3)';
+  sum.innerHTML='';ag.innerHTML='';raw.textContent='';
+  try{
+    const r=await fetch('/api/window_trace/'+wid);const d=await r.json();
+    if(!d.ok){st.textContent=d.error||'Error';st.style.color='var(--r)';return}
+    st.textContent='OK';st.style.color='var(--g)';
+    const w=d.window||{};const c=d.counts||{};
+    sum.innerHTML=
+      '<b>Window '+wid+'</b> — open=$'+(w.open_price||0).toFixed(2)+
+      ' close=$'+(w.close_price||0).toFixed(2)+
+      ' outcome=<b style="color:'+(w.outcome==='UP'?'var(--g)':w.outcome==='DOWN'?'var(--r)':'var(--t3)')+'">'+(w.outcome||'?')+'</b>'+
+      ' | preds='+c.predictions+' bets='+c.bets+' real='+c.real_bets+' shadow='+c.shadow_bets+' ghost='+c.ghost_bets+' liq='+c.liquidations;
+    let html='';
+    (d.agents||[]).forEach(a=>{
+      const dir=a.prediction||'?';const ok=a.correct;
+      const dirColor=dir==='UP'?'var(--g)':dir==='DOWN'?'var(--r)':'var(--t3)';
+      const okBadge=ok===1?'<span class="badge badge-win">W</span>':ok===0?'<span class="badge badge-loss">L</span>':'';
+      html+='<div style="padding:8px;margin-bottom:6px;border:1px solid var(--bd);border-radius:6px;background:var(--bg)">';
+      html+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+      html+='<span class="badge badge-agent">'+a.agent+'</span>';
+      html+='<span style="color:'+dirColor+';font-weight:700">'+dir+' '+(a.confidence||0)+'%</span>';
+      if(a.strategy)html+='<span class="badge badge-rag">'+a.strategy+'</span>';
+      html+=okBadge;
+      if(a.bets&&a.bets.length){a.bets.forEach(b=>{
+        const p=(b.profit||0);
+        html+='<span class="badge '+(b.is_ghost?'badge-ghost':b.is_shadow?'badge-shadow':'badge-real')+'">'+
+              b.side+' $'+(b.amount||0).toFixed(2)+' @'+(b.odds_cents||0).toFixed(0)+'c '+
+              (p>=0?'+':'')+'$'+p.toFixed(2)+'</span>';
+      })}
+      html+='</div>';
+      if(a.reasoning)html+='<div style="margin-top:6px;font-size:10px;color:var(--t3);line-height:1.5">'+escapeHtml(a.reasoning)+'</div>';
+      html+='</div>';
+    });
+    ag.innerHTML=html||'<div style="color:var(--t4)">Sin agentes</div>';
+    raw.textContent=JSON.stringify(d,null,2);
+  }catch(e){st.textContent='Error red';st.style.color='var(--r)'}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const b=document.getElementById('wt-load');if(b)b.addEventListener('click',loadWindowTrace);
+  const i=document.getElementById('wt-id');if(i)i.addEventListener('keydown',e=>{if(e.key==='Enter')loadWindowTrace()});
+});
+
+loadHistory();
+const _histIntervals=[setInterval(loadHistory,5000)];
+window.addEventListener('beforeunload',()=>_histIntervals.forEach(id=>clearInterval(id)));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)_histIntervals.forEach(id=>clearInterval(id))});
+{% endblock %}

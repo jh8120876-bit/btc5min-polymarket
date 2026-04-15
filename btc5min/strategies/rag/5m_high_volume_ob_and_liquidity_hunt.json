@@ -1,0 +1,18 @@
+{
+  "strategy_name": "5m High-Volume OB & Liquidity Hunt",
+  "concept_family": "SMC | Order Block",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar el Order Block (OB): la última vela en dirección opuesta antes de un movimiento fuerte que causa desequilibrio en el mercado.",
+    "Validar manipulación: Debe ocurrir un comportamiento de cacería de liquidez (barrido de stop-loss, falsos quiebres o trampas de velas) dentro del área del OB.",
+    "Validar impulso: El precio debe salir rápidamente del área con velas amplias, formando un desequilibrio de precio significativo y un quiebre de estructura (BOS) o cambio de carácter (CHoCH).",
+    "Validar inbalance (Regla de 3 velas): Las siguientes 3 velas después de formarse el OB no deben retroceder a esa área de OB.",
+    "Validar volumen: La vela del OB debe tener alto volumen, o el volumen de transacciones debe aumentar gradualmente en el movimiento posterior al OB.",
+    "Ejecución: Ingresar en compra/venta solo cuando el mercado retrocede para probar esta área de OB que previamente estaba 'sin testear' (untested)."
+  ],
+  "invalidation_condition": "El precio rompe el Order Block; las órdenes de stop-loss deben colocarse por debajo o por encima del bloque de órdenes."
+}

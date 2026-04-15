@@ -1,0 +1,16 @@
+{
+  "strategy_name": "5m SMC Power of Three (AMD)",
+  "concept_family": "SMC | Liquidity",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "ranging_to_trend"
+  },
+  "entry_rules": [
+    "Acumulación: Identificar un rango lateral estrecho y claro de al menos 5-10 velas (consolidación).",
+    "Manipulación: Esperar un falso quiebre rápido y con volumen que barra la liquidez por encima o por debajo de este rango lateral.",
+    "Confirmación: El precio debe ser rechazado inmediatamente, reingresando al rango y causando un Cambio de Carácter (CHoCH) en la dirección opuesta a la manipulación.",
+    "Distribución (Entrada): Entrar a mercado o en un leve retroceso (hacia un FVG) justo después de que se confirme el CHoCH."
+  ],
+  "invalidation_condition": "El precio no logra sostener la reversión y vuelve a romper más allá de la mecha máxima/mínima creada durante la fase de manipulación."
+}

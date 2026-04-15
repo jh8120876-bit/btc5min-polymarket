@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Elliott ABC Correction Entry (5m)",
+  "concept_family": "Elliott Wave",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "medium",
+    "market_phase": "reversal"
+  },
+  "entry_rules": [
+    "Identificar una estructura impulsiva de 5 ondas completada.",
+    "Esperar onda correctiva A: primer movimiento contra-tendencia fuerte.",
+    "Esperar onda correctiva B: rebote parcial (típicamente 50%-78.6% de A) que engaña a traders como continuación de tendencia.",
+    "Entrar al inicio de onda C: cuando el precio rompe el extremo de la onda A. La onda C suele igualar la longitud de la onda A.",
+    "Confluencia: la zona de entrada ideal es donde la onda C coincide con un nivel Fibonacci del impulso previo (38.2% o 50%)."
+  ],
+  "invalidation_condition": "La onda B supera el extremo del impulso previo (invalida la estructura correctiva ABC)."
+}

@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Volume Profile Value Area Rejection (5m)",
+  "concept_family": "Volume Profile",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "medium",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Calcular el Volume Profile de las últimas 4-6 horas: identificar POC (Point of Control), Value Area High (VAH) y Value Area Low (VAL).",
+    "Esperar que el precio se acerque al VAH o VAL desde dentro del Value Area.",
+    "Confirmar rechazo: una vela de 5m con mecha larga en la zona VAH/VAL y cierre dentro del Value Area.",
+    "Entrar a favor del Value Area: corto en VAH, largo en VAL.",
+    "Target: retorno al POC. Stop Loss por encima/debajo de la zona de rechazo."
+  ],
+  "invalidation_condition": "El precio cierra dos velas consecutivas de 5m fuera del Value Area (breakout genuino del rango de valor)."
+}

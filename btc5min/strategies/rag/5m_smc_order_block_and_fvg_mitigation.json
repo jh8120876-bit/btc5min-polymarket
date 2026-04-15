@@ -1,0 +1,17 @@
+{
+  "strategy_name": "5m SMC Order Block & FVG Mitigation",
+  "concept_family": "SMC",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar una ruptura de estructura (BOS) a favor de la tendencia impulsada por una vela de alto volumen (Engulfing Candle).",
+    "Identificar el Order Block (última vela contraria) en el origen del movimiento impulsivo.",
+    "Confirmar que existe un Fair Value Gap (FVG) o inbalance inmediatamente después del Order Block.",
+    "Esperar a que el precio retroceda para rellenar el FVG y toque la zona del Order Block (Mitigación).",
+    "Colocar orden de entrada a favor de la tendencia cuando el precio alcance el 50% del Order Block."
+  ],
+  "invalidation_condition": "El precio cierra una vela completa de 5m por debajo (compras) o por encima (ventas) de la zona del Order Block."
+}

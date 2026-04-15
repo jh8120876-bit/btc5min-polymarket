@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Volume Profile Low Volume Node Breakout (5m)",
+  "concept_family": "Volume Profile",
+  "optimal_context": {
+    "sentiment": "trending",
+    "volatility": "high",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar Low Volume Nodes (LVN): zonas de precio con muy poco volumen negociado (gaps en el perfil).",
+    "Esperar que el precio se acerque a un LVN desde un High Volume Node (HVN) adyacente.",
+    "El precio debería atravesar el LVN rápidamente (sin encontrar resistencia de volumen).",
+    "Entrar en la dirección del movimiento cuando el precio sale del LVN hacia el siguiente HVN.",
+    "El LVN actúa como 'zona de baja fricción' — el precio se mueve rápido a través de ella."
+  ],
+  "invalidation_condition": "El precio se detiene y consolida dentro del Low Volume Node (indicando que el perfil de volumen ha cambiado)."
+}

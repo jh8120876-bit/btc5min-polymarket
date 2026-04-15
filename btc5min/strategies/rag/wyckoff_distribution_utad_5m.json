@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Wyckoff Distribution UTAD (5m)",
+  "concept_family": "Wyckoff",
+  "optimal_context": {
+    "sentiment": "greed",
+    "volatility": "medium-high",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Identificar rango de distribución: el precio oscila en un rango superior tras una tendencia alcista prolongada.",
+    "Esperar el Upthrust After Distribution (UTAD): una penetración rápida por encima de la resistencia del rango con volumen decreciente (trampa alcista).",
+    "Confirmar con Test: el precio regresa al interior del rango y testea la resistencia con volumen bajo.",
+    "Entrada en el Sign of Weakness (SOW): una vela de 5m cierra por debajo del soporte del rango con volumen creciente.",
+    "Stop Loss por encima del máximo del UTAD."
+  ],
+  "invalidation_condition": "El precio cierra por encima del máximo del UTAD con volumen sostenido (distribución fallida, ruptura alcista genuina)."
+}

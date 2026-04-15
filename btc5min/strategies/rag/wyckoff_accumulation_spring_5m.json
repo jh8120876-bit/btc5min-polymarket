@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Wyckoff Accumulation Spring (5m)",
+  "concept_family": "Wyckoff",
+  "optimal_context": {
+    "sentiment": "fear",
+    "volatility": "medium-high",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Identificar rango de acumulación: el precio oscila entre un soporte (creek) y una resistencia (creek superior) durante al menos 15-20 velas de 5m.",
+    "Esperar el Spring: una penetración rápida por debajo del soporte del rango con volumen decreciente (trampa bajista).",
+    "Confirmar con Test: el precio regresa al interior del rango y testea el soporte recién barrido con volumen bajo.",
+    "Entrada en el Sign of Strength (SOS): una vela de 5m cierra por encima del creek/resistencia del rango con volumen creciente.",
+    "Stop Loss debajo del mínimo del Spring."
+  ],
+  "invalidation_condition": "El precio cierra una vela de 5m por debajo del mínimo del Spring con volumen alto (acumulación fallida)."
+}

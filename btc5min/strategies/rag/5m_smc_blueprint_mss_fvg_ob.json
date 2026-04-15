@@ -1,0 +1,17 @@
+{
+  "strategy_name": "5m SMC Blueprint (MSS + FVG + OB)",
+  "concept_family": "SMC",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "medium-high",
+    "market_phase": "reversal"
+  },
+  "entry_rules": [
+    "Identificar zonas de liquidez cercanas (máximos o mínimos recientes donde se agrupan los Stop Loss).",
+    "Esperar un Market Structure Shift (MSS) claro: el precio rompe un máximo más bajo (para compras) o un mínimo más alto (para ventas).",
+    "Confirmar que el movimiento del MSS fue agresivo y dejó un Imbalance (Fair Value Gap) en el gráfico.",
+    "Ubicar el Order Block (OB) válido: la última vela contraria justo antes del movimiento fuerte que rompió la estructura.",
+    "Colocar una orden límite de entrada exactamente en la zona del OB, esperando que el precio retroceda para llenar el Imbalance."
+  ],
+  "invalidation_condition": "El precio cruza y cierra más allá del Order Block."
+}

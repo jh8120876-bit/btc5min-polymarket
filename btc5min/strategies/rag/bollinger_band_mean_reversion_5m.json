@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Bollinger Band Mean Reversion (5m)",
+  "concept_family": "Mean Reversion | TA",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Confirmar rango: el precio ha oscilado entre las bandas superior e inferior de Bollinger (20,2) durante al menos 10 velas.",
+    "Esperar toque extremo: el precio toca o penetra la banda superior/inferior de Bollinger.",
+    "Confirmar con RSI: RSI(14) en zona extrema (>70 para venta, <30 para compra) concordante con el toque de banda.",
+    "Entrar en reversión hacia la media (banda central SMA-20) cuando una vela de 5m cierra de vuelta dentro de las bandas.",
+    "Target: banda central (SMA-20). Stop Loss por encima/debajo del extremo reciente."
+  ],
+  "invalidation_condition": "El precio cierra tres velas consecutivas fuera de la banda (expansión de volatilidad, no reversión)."
+}

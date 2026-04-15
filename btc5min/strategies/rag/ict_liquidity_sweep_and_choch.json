@@ -1,0 +1,16 @@
+{
+  "strategy_name": "ICT Liquidity Sweep and CHOCH",
+  "concept_family": "ICT | SMC",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "ranging"
+  },
+  "entry_rules": [
+    "Identificar vela individual que barra la liquidez (supere mínimo/máximo anterior).",
+    "La vela posterior no debe superar a la vela sweep.",
+    "Esperar CHOCH (Change of Character) en timeframe menor.",
+    "Colocar orden en el Order Block mitigado."
+  ],
+  "invalidation_condition": "El precio rompe el Order Block."
+}

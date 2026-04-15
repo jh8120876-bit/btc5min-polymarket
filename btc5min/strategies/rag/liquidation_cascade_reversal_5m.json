@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Liquidation Cascade Reversal (5m)",
+  "concept_family": "Liquidation | Futures",
+  "optimal_context": {
+    "sentiment": "fear",
+    "volatility": "high",
+    "market_phase": "reversal"
+  },
+  "entry_rules": [
+    "Detectar cascada de liquidaciones: volumen de liquidaciones >3x el promedio móvil de 1h en un lado (buy o sell).",
+    "Esperar el pico de liquidaciones: el volumen por minuto comienza a disminuir después del spike.",
+    "Confirmar absorción: velas de 5m empiezan a mostrar mechas largas en la dirección de la cascada (rechazo del precio).",
+    "Entrar en dirección contraria a las liquidaciones cuando se confirma un CHoCH en 5m.",
+    "El funding rate extremo en la dirección de las liquidaciones refuerza la señal de reversión."
+  ],
+  "invalidation_condition": "Las liquidaciones continúan acelerándose sin señales de absorción (caos de mercado — no operar)."
+}

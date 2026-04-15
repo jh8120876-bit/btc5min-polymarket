@@ -1,0 +1,17 @@
+{
+  "strategy_name": "5m SMC Optimal Trade Entry (OTE)",
+  "concept_family": "SMC | Fibonacci",
+  "optimal_context": {
+    "sentiment": "trending",
+    "volatility": "medium",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar un impulso direccional agresivo (Displacement) que rompa la estructura (BOS) a favor de la tendencia principal.",
+    "Medir el rango de ese impulso (del mínimo al máximo).",
+    "Identificar la zona OTE: El área matemática que se encuentra entre el 62% y el 79% de retroceso de ese impulso.",
+    "Validar confluencia: Dentro de esa zona OTE (62%-79%) debe existir un Order Block (OB) o un Fair Value Gap (FVG) previo.",
+    "Colocar orden límite exactamente en la convergencia de la zona OTE con el OB/FVG."
+  ],
+  "invalidation_condition": "El precio cruza y cierra una vela de 5m por debajo del nivel 100% de retroceso (el punto de origen del impulso)."
+}

@@ -1,0 +1,131 @@
+# ══════════════════════════════════════════════════════════════
+#  Secrets & Environment
+# ══════════════════════════════════════════════════════════════
+.env
+.env.*
+*.env
+!.env.example
+!env.example
+*.key
+*.pem
+*.secret
+credentials*.json
+secrets.json
+
+# ══════════════════════════════════════════════════════════════
+#  Python
+# ══════════════════════════════════════════════════════════════
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.eggs/
+*.egg-info/
+build/
+dist/
+
+# ══════════════════════════════════════════════════════════════
+#  ML Models & Training Data (regenerate via ml/ scripts)
+# ══════════════════════════════════════════════════════════════
+models/*.pkl
+models/*.joblib
+models/*.zip
+models/*.pt
+models/*.pth
+models/*.onnx
+data/*.csv
+data/*.json
+data/*.parquet
+!models/.gitkeep
+!data/.gitkeep
+
+# ══════════════════════════════════════════════════════════════
+#  Runtime State — DO NOT commit
+# ══════════════════════════════════════════════════════════════
+# SQLite databases & WAL/SHM
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+
+# ChromaDB vector store (regenerate via ingestar_rag.py)
+memory/
+btc5min/memory/
+
+# Logs
+logs/
+*.log
+errors.log
+*.log.*
+
+# Backups
+backups/
+*.bak
+*.backup
+
+# ══════════════════════════════════════════════════════════════
+#  IDE / Editors
+# ══════════════════════════════════════════════════════════════
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ══════════════════════════════════════════════════════════════
+#  OS cruft
+# ══════════════════════════════════════════════════════════════
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ══════════════════════════════════════════════════════════════
+#  Claude Code / AI agent state
+# ══════════════════════════════════════════════════════════════
+.claude/
+CLAUDE.local.md
+AI_CONTEXT_NOW.md
+
+# ══════════════════════════════════════════════════════════════
+#  HuggingFace / transformers cache (if project-local)
+# ══════════════════════════════════════════════════════════════
+.cache/
+hf_cache/
+
+# ══════════════════════════════════════════════════════════════
+#  Temp / experimental
+# ══════════════════════════════════════════════════════════════
+vibe_temp/
+tmp/
+temp/
+scratch/
+
+# ══════════════════════════════════════════════════════════════
+#  Node (if any frontend)
+# ══════════════════════════════════════════════════════════════
+node_modules/
+dist/
+.next/
+.nuxt/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

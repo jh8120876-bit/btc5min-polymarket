@@ -1,0 +1,843 @@
+{% extends "base.html" %}
+{% block title %}BTC Predictor — Cerebro AI{% endblock %}
+{% block extra_css %}
+.brain-card{background:var(--bg);border-radius:10px;padding:14px;text-align:center}
+.brain-val{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700}
+.brain-lbl{font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:4px}
+.brain-sub{font-size:9px;color:var(--t3);margin-top:6px}
+.section-title{font-size:10px;letter-spacing:1px;margin-bottom:6px;font-weight:600}
+.info-box{font-size:11px;color:var(--t2);padding:10px;background:var(--bg);border-radius:8px;line-height:1.6;min-height:30px}
+/* Brain config tabs */
+.brain-tabs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:16px;background:var(--s1);padding:4px;border-radius:12px;border:1px solid var(--bd)}
+.brain-tabs button{flex:1;min-width:80px;background:0 0;border:1px solid transparent;color:var(--t3);padding:8px 4px;font-size:10px;font-weight:700;cursor:pointer;border-radius:8px;transition:all .3s;white-space:nowrap}
+.brain-tabs button:hover{color:var(--t1);background:rgba(255,255,255,.03)}
+.brain-tabs button.active{background:var(--glass);color:var(--neon-cyan);border-color:var(--glass-border);box-shadow:0 0 8px rgba(0,212,255,.08)}
+.bsec{display:none;animation:su .3s ease}
+.bsec.active{display:block}
+/* Config rows */
+.bc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;gap:8px}
+.bc-row:last-child{border-bottom:none}
+.bc-name{color:var(--t2);flex:1;font-size:11px;line-height:1.4}
+.bc-hint{font-size:9px;color:var(--t4);display:block;margin-top:2px}
+.bc-input{background:var(--s2);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;color:var(--t1);font-family:inherit;font-size:12px;width:80px;text-align:center;outline:none;transition:border .2s}
+.bc-input:focus{border-color:var(--neon-cyan)}
+.bc-toggle-wrap{position:relative;display:inline-block;width:38px;height:20px;cursor:pointer}
+.bc-toggle-wrap input{opacity:0;width:0;height:0}
+.bc-track{position:absolute;inset:0;background:var(--bd);border-radius:10px;transition:.3s}
+.bc-dot{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
+.bc-toggle-wrap input:checked+.bc-track{background:var(--neon-green)}
+.bc-toggle-wrap input:checked+.bc-track+.bc-dot{left:20px}
+.bc-save-row{display:flex;gap:8px;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--bd)}
+.bc-btn{background:var(--b);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.bc-btn:hover{opacity:.85;transform:translateY(-1px)}
+.bc-btn:active{transform:translateY(0)}
+.bc-section-card{background:var(--bg);border-radius:10px;padding:16px;margin-bottom:14px}
+.bc-section-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.bc-section-emoji{font-size:16px}
+.bc-section-label{font-size:11px;letter-spacing:1.5px;font-weight:700}
+@media(max-width:600px){.brain-tabs button{font-size:9px;padding:6px 2px;min-width:60px}.bc-row{flex-direction:column;align-items:flex-start;gap:6px}.bc-input{width:100%}}
+{% endblock %}
+
+{% block content %}
+  <!-- ═══ STATUS (read-only) ═══ -->
+  <div class="card">
+    <div class="lbl" style="margin-bottom:14px">ESTADO DEL CEREBRO AI</div>
+    <div class="g4">
+      <div class="brain-card">
+        <div class="brain-lbl">TRUST SCORE</div>
+        <div class="brain-val" id="brain-trust">--</div>
+        <div class="cbar" style="margin:6px 0"><div class="cfill" id="brain-trust-bar"></div></div>
+        <div id="brain-trust-label" style="font-size:9px;color:var(--t3)">--</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">MULTIPLICADOR</div>
+        <div class="brain-val" id="brain-mult" style="color:var(--b2)">--</div>
+        <div class="brain-sub">Afecta monto apuesta</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">UMBRAL EARLY BET</div>
+        <div class="brain-val" id="brain-early" style="color:var(--y)">--</div>
+        <div class="brain-sub">Conf >= esto = apuesta ya</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">SESIONES</div>
+        <div class="brain-val" id="brain-sessions" style="color:var(--cyan)">--</div>
+        <div class="brain-sub">Ejecuciones del sistema</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accuracy -->
+  <div class="card">
+    <div class="lbl" style="margin-bottom:14px">RENDIMIENTO</div>
+    <div class="g4">
+      <div class="brain-card">
+        <div class="brain-lbl">ACCURACY</div>
+        <div id="acc-pct" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700">--%</div>
+        <div id="acc-detail" style="font-size:10px;color:var(--t3);margin-top:4px">--</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">UP ACCURACY</div>
+        <div id="acc-up" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--g)">--%</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">DOWN ACCURACY</div>
+        <div id="acc-dn" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--r)">--%</div>
+      </div>
+      <div class="brain-card">
+        <div class="brain-lbl">RACHA</div>
+        <div id="acc-streak" style="font-size:16px;margin-top:6px">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIGURATION TABS ═══ -->
+  <div class="card" style="padding:14px">
+    <div class="lbl" style="margin-bottom:10px">⚙️ CONFIGURACIÓN DEL CEREBRO — <span style="color:var(--neon-cyan)">en vivo, persistente</span></div>
+
+    <div class="brain-tabs">
+      <button class="active" onclick="switchBrainTab('confianza',this)">🎯 Confianza</button>
+      <button onclick="switchBrainTab('sniper',this)">⏱️ Sniper</button>
+      <button onclick="switchBrainTab('proteccion',this)">🛡️ Protección</button>
+      <button onclick="switchBrainTab('mercado',this)">📊 Mercado</button>
+      <button onclick="switchBrainTab('trust',this)">🤖 Trust</button>
+      <button onclick="switchBrainTab('opinion',this)">🔄 2ª Opinión</button>
+    </div>
+
+    <!-- ── Sección 1: Confianza General ── -->
+    <div class="bsec active" id="sec-confianza">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">🎯</span>
+          <span class="bc-section-label" style="color:var(--neon-cyan)">UMBRALES DE CONFIANZA PARA APOSTAR</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">Controla cuánta certeza necesita la IA antes de arriesgar dinero. Valores más altos = más selectiva.</p>
+
+        <div class="bc-row">
+          <div class="bc-name">Confianza mínima global<span class="bc-hint">Si la IA tiene menos de este %, NO apuesta</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-min-conf" min="30" max="95" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Confianza mínima en mercado peligroso<span class="bc-hint">Cuando el score de riesgo es HIGH, exige al menos este %</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-high-risk-conf" min="30" max="90" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Umbral de Early Bet<span class="bc-hint">Dispara antes de 2min si la confianza supera este % (Auto-ajustable por IA)</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-early" min="50" max="95" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Fracción de Kelly<span class="bc-hint">Qué porcentaje del bet óptimo se toma (1.0 = full Kelly, 0.5 = half Kelly)</span></div>
+          <input type="number" class="bc-input" id="bc-kelly" min="0.1" max="1.0" step="0.05">
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Máximo por apuesta (% del balance)<span class="bc-hint">Límite absoluto: nunca apostará más de este % de tu saldo</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-max-bet" min="1" max="20" step="0.5"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" onclick="saveBrainSection('confianza')">💾 GUARDAR</button>
+          <span id="msg-confianza" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 2: Sniper Timing ── -->
+    <div class="bsec" id="sec-sniper">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">⏱️</span>
+          <span class="bc-section-label" style="color:var(--y)">TIMING DEL FRANCOTIRADOR</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">Controla cuándo y cómo el Sniper evalúa y decide disparar la apuesta dentro de cada ventana de 5 minutos.</p>
+
+        <div class="bc-row">
+          <div class="bc-name">Intervalo entre evaluaciones<span class="bc-hint">Cada cuántos segundos el sniper re-chequea el mercado</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-eval-interval" min="3" max="30" step="1"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Límite de evaluación<span class="bc-hint">Después de este segundo, el sniper deja de evaluar</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-eval-cutoff" min="60" max="280" step="5"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Espera antes de la 1ª evaluación<span class="bc-hint">Deja que el precio se estabilice antes de la primera lectura</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-first-delay" min="5" max="60" step="1"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Score para disparar<span class="bc-hint">Puntuación de consenso mínima para ejecutar la apuesta</span></div>
+          <input type="number" class="bc-input" id="bc-fire-score" min="1" max="5" step="1">
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Score para voltear predicción<span class="bc-hint">Si el score llega a esto (negativo), invierte la dirección</span></div>
+          <input type="number" class="bc-input" id="bc-flip-score" min="-5" max="-1" step="1">
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Rescate de último minuto — confianza mín<span class="bc-hint">Si queda poco tiempo, acepta este nivel de confianza</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-rescue-conf" min="40" max="90" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Rescate de último minuto — EV mín<span class="bc-hint">EV mínimo aceptable en la fase de rescate</span></div>
+          <input type="number" class="bc-input" id="bc-rescue-ev" min="1.00" max="2.00" step="0.01">
+        </div>
+
+        <!-- Sniper confidence decay settings -->
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+          <div style="font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:8px;font-weight:600">CONFIANZA DEL SNIPER</div>
+          <div class="bc-row">
+            <div class="bc-name">Confianza mínima del Sniper<span class="bc-hint">El Sniper necesita al menos esto para disparar</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="cr-min" min="30" max="95" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Piso de decaimiento<span class="bc-hint">La confianza nunca baja de este % con el paso del tiempo</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="cr-floor" min="30" max="90" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Velocidad de decaimiento<span class="bc-hint">Puntos de confianza que pierde por cada minuto que pasa</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="cr-decay" min="0" max="20" step="0.5"><span style="font-size:10px;color:var(--t4)">%/min</span></div>
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">EV para disparo Flash-Fire<span class="bc-hint">Si el EV supera esto, dispara inmediatamente sin esperar</span></div>
+            <input type="number" class="bc-input" id="cr-ev" min="1.00" max="2.00" step="0.01">
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Modo de decaimiento<span class="bc-hint">Linear = constante, Quadratic = más agresivo al final</span></div>
+            <select class="bc-input" id="cr-mode" style="width:120px"><option value="linear">Linear</option><option value="quadratic">Quadratic</option></select>
+          </div>
+        </div>
+
+        <!-- Watchful Hold -->
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:14px">⏳</span>
+            <span style="font-size:9px;color:var(--t4);letter-spacing:1px;font-weight:600">WATCHFUL HOLD</span>
+            <span id="wh-status" style="font-size:9px;padding:2px 6px;border-radius:8px;background:var(--s2);color:var(--t3)">...</span>
+          </div>
+          <p style="font-size:10px;color:var(--t3);margin-bottom:10px">En vez de convertir a ghost al primer veto suave (EV/payout/coinflip), mantiene en escucha re-evaluando el CLOB. Si 2 checks consecutivos aprueban, sube a apuesta real.</p>
+          <div class="bc-row">
+            <div class="bc-name">Watchful Hold activo<span class="bc-hint">Habilita la re-evaluación del CLOB antes de hacer ghost</span></div>
+            <label class="bc-toggle-wrap"><input type="checkbox" id="wh-toggle" onchange="toggleWatchfulHold()"><span class="bc-track"></span><span class="bc-dot"></span></label>
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Checks OK para upgrade<span class="bc-hint">Cuántos chequeos consecutivos aprobados antes de subir a bet real</span></div>
+            <input type="number" class="bc-input" id="wh-consec" min="1" max="5" step="1">
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Máximo de reintentos<span class="bc-hint">Cuántas veces re-chequea antes de rendirse</span></div>
+            <input type="number" class="bc-input" id="wh-maxret" min="1" max="30" step="1">
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Intervalo entre reintentos<span class="bc-hint">Cada cuántos segundos re-evalúa</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="wh-interval" min="5" max="60" step="1"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+          </div>
+          <div class="bc-row">
+            <div class="bc-name">Commit ghost antes del cierre<span class="bc-hint">Si no mejora, convierte a ghost X segundos antes del cierre</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="wh-commit" min="5" max="60" step="1"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+          </div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" onclick="saveBrainSection('sniper')">💾 GUARDAR</button>
+          <span id="msg-sniper" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 3: Protección / Circuit Breakers ── -->
+    <div class="bsec" id="sec-proteccion">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">🛡️</span>
+          <span class="bc-section-label" style="color:var(--r2)">PROTECCIÓN DEL CAPITAL</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">Cortacircuitos que frenan las apuestas automáticamente cuando la cuenta está en peligro. Protege tu dinero.</p>
+
+        <div class="bc-row">
+          <div class="bc-name">Drawdown para FRENAR TODO<span class="bc-hint">Si tu saldo cae este % desde el pico, NO apuesta más (hard stop)</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-dd-halt" min="5" max="100" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Drawdown para reducir apuestas<span class="bc-hint">Si tu saldo cae este %, reduce el monto apostado a la mitad</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-dd-reduce" min="1" max="50" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Límite de pérdida diaria<span class="bc-hint">Si las pérdidas del día superan este % del balance, se detiene</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-daily-loss" min="1" max="100" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Racha perdedora — después de<span class="bc-hint">Tras perder X veces seguidas, reduce la apuesta</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-streak-thresh" min="1" max="20" step="1"><span style="font-size:10px;color:var(--t4)">derrotas</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Racha perdedora — reducir a<span class="bc-hint">Factor multiplicador después de la racha (0.5 = mitad)</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-streak-mult" min="0.1" max="1.0" step="0.05"><span style="font-size:10px;color:var(--t4)">x</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Techo para señales débiles<span class="bc-hint">Máximo % del balance en señales de baja calidad (ATR bajo)</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-lq-cap" min="0.01" max="5" step="0.01"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Caos de liquidaciones — multiplicador<span class="bc-hint">Si las liquidaciones superan X veces lo normal, cancela la apuesta</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-liq-chaos" min="2" max="20" step="0.5"><span style="font-size:10px;color:var(--t4)">x</span></div>
+        </div>
+
+        <!-- Risk Presets -->
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+          <div style="font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:10px;font-weight:600">PERFIL DE RIESGO RÁPIDO</div>
+          <p style="font-size:10px;color:var(--t3);margin-bottom:10px">Aplica un preset completo que ajusta EV, filtros y penalizaciones de una sola vez.</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:flex-start;gap:8px;background:var(--s2);padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--bd)">
+              <input type="radio" name="risk_preset" value="cautious" style="margin-top:3px">
+              <div><div style="color:var(--t1);font-weight:600;font-size:12px">🐢 Cauteloso</div><div style="color:var(--t3);font-size:10px">Máxima exigencia de EV. Filtra agresivamente coinflip y horas muertas.</div></div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:8px;background:var(--s2);padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--bd)">
+              <input type="radio" name="risk_preset" value="calibrated" style="margin-top:3px">
+              <div><div style="color:var(--t1);font-weight:600;font-size:12px">⚖️ Calibrado (recomendado)</div><div style="color:var(--t3);font-size:10px">Balance estadístico. EV ≥ 1.02 y penalizaciones moderadas.</div></div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:8px;background:var(--s2);padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--bd)">
+              <input type="radio" name="risk_preset" value="aggressive" style="margin-top:3px">
+              <div><div style="color:var(--t1);font-weight:600;font-size:12px">🔥 Agresivo</div><div style="color:var(--t3);font-size:10px">Alta frecuencia de disparo. EV 1.00 (breakeven). Filtra poco.</div></div>
+            </label>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <button class="bc-btn" style="background:var(--y);color:#000" onclick="applyRiskPreset()">⚡ APLICAR PERFIL</button>
+            <span id="msg-preset" style="font-size:10px;color:var(--t3)"></span>
+          </div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" style="background:var(--r)" onclick="saveBrainSection('proteccion')">💾 GUARDAR</button>
+          <span id="msg-proteccion" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 4: Mercado (EV + Filtros) ── -->
+    <div class="bsec" id="sec-mercado">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">📊</span>
+          <span class="bc-section-label" style="color:var(--g2)">FILTROS DE MERCADO Y VALOR ESPERADO</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">Filtros que evalúan si las condiciones del mercado y las cuotas hacen que una apuesta valga la pena.</p>
+
+        <div style="font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:8px;font-weight:600">VALOR ESPERADO (EV GATE)</div>
+        <div class="bc-row">
+          <div class="bc-name">Gate de EV activo<span class="bc-hint">Si está OFF, no filtra por valor esperado</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-ev-enabled"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">EV mínimo para apostar<span class="bc-hint">Valor esperado mínimo (1.00 = breakeven, 1.05 = exigente)</span></div>
+          <input type="number" class="bc-input" id="bc-min-ev" min="0.90" max="2.00" step="0.01">
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Payout mínimo aceptable<span class="bc-hint">No apuesta si el retorno potencial es menor que esto</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-min-payout" min="1.00" max="3.00" step="0.05"><span style="font-size:10px;color:var(--t4)">x</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Zona de coinflip (margen)<span class="bc-hint">Si las cuotas están a ±Xc de 50¢, la rechaza como moneda al aire</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-coinflip" min="0" max="15" step="1"><span style="font-size:10px;color:var(--t4)">¢</span></div>
+        </div>
+
+        <div style="margin-top:14px;font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:8px;font-weight:600">PENALIZACIONES DE MERCADO</div>
+        <div class="bc-row">
+          <div class="bc-name">Filtros de mercado activos<span class="bc-hint">Si está OFF, no aplica penalizaciones por condiciones de mercado</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-mf-enabled"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Penalización por Funding Rate<span class="bc-hint">% de confianza que pierde si el funding rate es extremo</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-fr-penalty" min="1" max="50" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Penalización por flujo en contra (CVD)<span class="bc-hint">Puntos que pierde si el order flow va en contra de la predicción</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-cvd-penalty" min="0" max="30" step="1"><span style="font-size:10px;color:var(--t4)">pts</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Penalización por liquidaciones<span class="bc-hint">Puntos que pierde por spike de liquidaciones</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-liq-penalty" min="0" max="30" step="1"><span style="font-size:10px;color:var(--t4)">pts</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Horas muertas (UTC)<span class="bc-hint">Rango de horas de bajo volumen donde reduce confianza</span></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" class="bc-input" id="bc-dh-start" min="0" max="23" step="1" style="width:50px">
+            <span style="color:var(--t4);font-size:10px">a</span>
+            <input type="number" class="bc-input" id="bc-dh-end" min="0" max="23" step="1" style="width:50px">
+            <span style="color:var(--t4);font-size:10px">UTC</span>
+          </div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Penalización en horas muertas<span class="bc-hint">% de confianza que pierde en horas de bajo volumen</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-dh-penalty" min="0" max="50" step="1"><span style="font-size:10px;color:var(--t4)">%</span></div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" style="background:var(--g2)" onclick="saveBrainSection('mercado')">💾 GUARDAR</button>
+          <span id="msg-mercado" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 5: Trust Score ── -->
+    <div class="bsec" id="sec-trust">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">🤖</span>
+          <span class="bc-section-label" style="color:var(--b2)">SISTEMA DE CONFIANZA (TRUST SCORE)</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">El Trust Score mide cuánto confía el sistema en su propia IA. Sube con aciertos, baja con fallos. Afecta el tamaño de las apuestas.</p>
+
+        <div class="bc-row">
+          <div class="bc-name">Trust inicial de una nueva IA<span class="bc-hint">Score con el que empieza cada agente nuevo</span></div>
+          <input type="number" class="bc-input" id="bc-trust-default" min="10" max="90" step="1">
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Bonus por acertar<span class="bc-hint">Puntos que gana el trust cuando la predicción es correcta</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--g)">+</span><input type="number" class="bc-input" id="bc-trust-win" min="1" max="20" step="1"><span style="font-size:10px;color:var(--t4)">pts</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Penalización por fallar<span class="bc-hint">Puntos que pierde cuando la predicción es incorrecta</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--r)">−</span><input type="number" class="bc-input" id="bc-trust-loss" min="1" max="20" step="1"><span style="font-size:10px;color:var(--t4)">pts</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Bonus extra por alta confianza<span class="bc-hint">Puntos extra si acertó con confianza ≥ 70%</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--neon-cyan)">+</span><input type="number" class="bc-input" id="bc-trust-hc" min="0" max="10" step="1"><span style="font-size:10px;color:var(--t4)">pts</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Rango del Trust Score<span class="bc-hint">Mínimo y máximo que puede alcanzar el score</span></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" class="bc-input" id="bc-trust-min" min="0" max="50" step="1" style="width:55px">
+            <span style="color:var(--t4);font-size:10px">a</span>
+            <input type="number" class="bc-input" id="bc-trust-max" min="50" max="100" step="1" style="width:55px">
+          </div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" style="background:var(--b2)" onclick="saveBrainSection('trust')">💾 GUARDAR</button>
+          <span id="msg-trust" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 6: Segunda Opinión ── -->
+    <div class="bsec" id="sec-opinion">
+      <div class="bc-section-card">
+        <div class="bc-section-head">
+          <span class="bc-section-emoji">🔄</span>
+          <span class="bc-section-label" style="color:var(--y)">SISTEMA DE SEGUNDA OPINIÓN</span>
+        </div>
+        <p style="font-size:10px;color:var(--t3);margin-bottom:12px">Consultas adicionales a la IA durante la ventana. Cada variante es un checkeo extra que puede vetar o confirmar la apuesta.</p>
+
+        <div class="bc-row">
+          <div class="bc-name">Segunda opinión activa<span class="bc-hint">Master toggle: si está OFF, no hace consultas extra</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-so-enabled"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Timeout de consulta<span class="bc-hint">Segundos máximos para esperar la respuesta de la IA</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-so-timeout" min="1" max="15" step="0.5"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+        </div>
+
+        <div style="margin-top:12px;font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:8px;font-weight:600">VARIANTES (toggles individuales)</div>
+        <div class="bc-row">
+          <div class="bc-name">Variante A — Rescate de señal<span class="bc-hint">Intenta rescatar señales débiles con una consulta sync + veto</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-so-a"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Variante B — Flip asíncrono<span class="bc-hint">Consulta en segundo plano si debería invertir la dirección</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-so-b"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Variante C — Flash-Fire veto<span class="bc-hint">Consulta sync rápida que puede vetar un flash-fire</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-so-c"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Variante D — Análisis tardío<span class="bc-hint">Consulta de background que evalúa el mercado a mitad de ventana</span></div>
+          <label class="bc-toggle-wrap"><input type="checkbox" id="bc-so-d"><span class="bc-track"></span><span class="bc-dot"></span></label>
+        </div>
+        <div class="bc-row">
+          <div class="bc-name">Variante D — ¿cuándo se lanza?<span class="bc-hint">Segundos desde el inicio de la ventana para lanzar la consulta D</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><input type="number" class="bc-input" id="bc-so-d-launch" min="30" max="240" step="5"><span style="font-size:10px;color:var(--t4)">seg</span></div>
+        </div>
+
+        <div class="bc-save-row">
+          <button class="bc-btn" style="background:var(--y);color:#000" onclick="saveBrainSection('opinion')">💾 GUARDAR</button>
+          <span id="msg-opinion" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sesgos -->
+  <div class="card">
+    <div class="section-title" style="color:var(--y)">SESGOS DETECTADOS</div>
+    <div class="info-box" id="brain-bias">Sin sesgos detectados aun</div>
+  </div>
+
+  <!-- Lecciones -->
+  <div class="card">
+    <div class="section-title" style="color:var(--g)">LECCIONES APRENDIDAS (auto + LLM local)</div>
+    <div class="info-box" id="brain-lessons">Sin lecciones aun</div>
+  </div>
+
+  <!-- Multi-Agent Swarm Portfolios -->
+  <div class="card" id="brain-swarm-section" style="display:none">
+    <div class="lbl" style="margin-bottom:14px">ENJAMBRE MULTI-AGENTE — PORTFOLIOS</div>
+    <div id="brain-swarm-grid" class="g4" style="margin-bottom:0"></div>
+  </div>
+  <!-- ML Judge Feature Importance -->
+  <div class="card" id="brain-features-section" style="display:none">
+    <div class="lbl" style="margin-bottom:14px">ML JUDGE — IMPORTANCIA DE FEATURES</div>
+    <div id="brain-features-list" style="font-size:11px"></div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+// ── Tab switching ──
+function switchBrainTab(id,btn){
+  document.querySelectorAll('.brain-tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.bsec').forEach(s=>{
+    s.classList.toggle('active',s.id==='sec-'+id);
+  });
+}
+
+// ── Key mappings: section → {inputId: apiKey} ──
+const _BRAIN_MAP = {
+  confianza: {
+    'bc-min-conf':      {key:'risk.min_confidence',       pct:false},
+    'bc-high-risk-conf':{key:'risk.high_risk_min_conf',   pct:false},
+    'bc-early':         {key:'risk.early_bet_threshold',  pct:false},
+    'bc-kelly':         {key:'risk.kelly_fraction',       pct:false},
+    'bc-max-bet':       {key:'risk.max_bet_pct',          pct:true, div:100},
+  },
+  sniper: {
+    'bc-eval-interval': {key:'sniper.eval_interval_sec'},
+    'bc-eval-cutoff':   {key:'sniper.eval_cutoff_sec'},
+    'bc-first-delay':   {key:'sniper.first_eval_delay_sec'},
+    'bc-fire-score':    {key:'sniper.consensus_score_fire'},
+    'bc-flip-score':    {key:'sniper.consensus_score_flip'},
+    'bc-rescue-conf':   {key:'sniper.last_minute_rescue_conf'},
+    'bc-rescue-ev':     {key:'sniper.last_minute_rescue_ev'},
+  },
+  proteccion: {
+    'bc-dd-halt':       {key:'risk.max_drawdown_halt_pct'},
+    'bc-dd-reduce':     {key:'risk.max_drawdown_reduce_pct'},
+    'bc-daily-loss':    {key:'risk.daily_loss_limit_pct', pct:true, div:100},
+    'bc-streak-thresh': {key:'risk.losing_streak_threshold'},
+    'bc-streak-mult':   {key:'risk.losing_streak_reduction'},
+    'bc-lq-cap':        {key:'risk.low_quality_cap_pct', pct:true, div:100},
+    'bc-liq-chaos':     {key:'risk.liq_chaos_threshold'},
+  },
+  mercado: {
+    'bc-ev-enabled':    {key:'ev_gate.enabled',                toggle:true},
+    'bc-min-ev':        {key:'ev_gate.min_ev'},
+    'bc-min-payout':    {key:'ev_gate.min_payout'},
+    'bc-coinflip':      {key:'ev_gate.coinflip_margin_cents'},
+    'bc-mf-enabled':    {key:'market_filters.enabled',         toggle:true},
+    'bc-fr-penalty':    {key:'market_filters.funding_rate_penalty', pct:true, div:100},
+    'bc-cvd-penalty':   {key:'market_filters.cvd_divergence_penalty'},
+    'bc-liq-penalty':   {key:'market_filters.liquidation_penalty'},
+    'bc-dh-start':      {key:'market_filters.dead_hour_start'},
+    'bc-dh-end':        {key:'market_filters.dead_hour_end'},
+    'bc-dh-penalty':    {key:'market_filters.dead_hour_penalty', pct:true, div:100},
+  },
+  trust: {
+    'bc-trust-default': {key:'trust.default'},
+    'bc-trust-win':     {key:'trust.win_bonus'},
+    'bc-trust-loss':    {key:'trust.loss_penalty'},
+    'bc-trust-hc':      {key:'trust.high_conf_bonus'},
+    'bc-trust-min':     {key:'trust.min'},
+    'bc-trust-max':     {key:'trust.max'},
+  },
+  opinion: {
+    'bc-so-enabled':    {key:'second_opinion.enabled',           toggle:true},
+    'bc-so-timeout':    {key:'second_opinion.timeout_sec'},
+    'bc-so-a':          {key:'second_opinion.variant_a_enabled', toggle:true},
+    'bc-so-b':          {key:'second_opinion.variant_b_enabled', toggle:true},
+    'bc-so-c':          {key:'second_opinion.variant_c_enabled', toggle:true},
+    'bc-so-d':          {key:'second_opinion.variant_d_enabled', toggle:true},
+    'bc-so-d-launch':   {key:'second_opinion.variant_d_launch_sec'},
+  },
+};
+
+// ── Sniper confidence rules (existing API) ──
+const _SNIPER_CONF_MAP = {
+  'cr-min':   'min_confidence',
+  'cr-floor': 'decay_floor_conf',
+  'cr-decay': 'confidence_decay_per_min',
+  'cr-ev':    'ev_flash_fire_threshold',
+  'cr-mode':  'decay_mode',
+};
+
+// ── Load all config from API ──
+let _brainConfig = {};
+
+async function loadBrainConfig(){
+  try{
+    const r=await fetch('/api/brain_config');_brainConfig=await r.json();
+    // Populate all inputs
+    for(const [section, fields] of Object.entries(_BRAIN_MAP)){
+      for(const [inputId, cfg] of Object.entries(fields)){
+        const el=$(inputId); if(!el) continue;
+        let val=_brainConfig[cfg.key];
+        if(val===undefined) continue;
+        if(cfg.toggle){
+          el.checked=!!val;
+        } else if(cfg.pct && cfg.div){
+          el.value=parseFloat((val*cfg.div).toFixed(2));
+        } else {
+          el.value=val;
+        }
+      }
+    }
+  }catch(e){console.error('loadBrainConfig',e)}
+
+  // Sniper confidence rules (existing separate API)
+  try{
+    const r2=await fetch('/api/confidence_rules');const d2=await r2.json();
+    for(const [inputId, apiKey] of Object.entries(_SNIPER_CONF_MAP)){
+      const el=$(inputId); if(!el||d2[apiKey]==null) continue;
+      el.value=d2[apiKey];
+    }
+  }catch(e){}
+}
+
+// ── Save section ──
+async function saveBrainSection(section){
+  const msgEl=$('msg-'+section);
+  if(msgEl){msgEl.textContent='Guardando...';msgEl.style.color='var(--y)'}
+  const fields=_BRAIN_MAP[section]||{};
+  const body={};
+
+  for(const [inputId, cfg] of Object.entries(fields)){
+    const el=$(inputId); if(!el) continue;
+    if(cfg.toggle){
+      body[cfg.key]=el.checked;
+    } else {
+      let v=parseFloat(el.value);
+      if(isNaN(v)) continue;
+      if(cfg.pct && cfg.div) v=v/cfg.div;
+      body[cfg.key]=v;
+    }
+  }
+
+  try{
+    const r=await fetch('/api/brain_config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.ok){
+      const n=Object.keys(d.updated||{}).length;
+      if(msgEl){msgEl.textContent='✅ '+n+' parámetro'+(n!==1?'s':'')+' guardado'+(n!==1?'s':'');msgEl.style.color='var(--neon-green)'}
+    }else{
+      if(msgEl){msgEl.textContent='❌ Error';msgEl.style.color='var(--r)'}
+    }
+  }catch(e){
+    if(msgEl){msgEl.textContent='❌ Error de red';msgEl.style.color='var(--r)'}
+  }
+
+  // If it's the sniper section, also save sniper conf rules + watchful hold
+  if(section==='sniper'){
+    const confBody={};
+    for(const [inputId, apiKey] of Object.entries(_SNIPER_CONF_MAP)){
+      const el=$(inputId); if(!el) continue;
+      if(apiKey==='decay_mode') confBody[apiKey]=el.value;
+      else{ const v=parseFloat(el.value); if(!isNaN(v)) confBody[apiKey]=v; }
+    }
+    try{
+      await fetch('/api/confidence_rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(confBody)});
+    }catch(e){}
+    // Save watchful hold params
+    try{
+      await fetch('/api/watchful_hold',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        upgrade_requires_consecutive_ok: parseInt($('wh-consec').value),
+        max_retries: parseInt($('wh-maxret').value),
+        commit_ghost_before_close_sec: parseInt($('wh-commit').value),
+        retry_interval_sec: parseInt($('wh-interval').value),
+      })});
+    }catch(e){}
+  }
+
+  // Clear message after 5s
+  setTimeout(()=>{if(msgEl)msgEl.textContent=''},5000);
+}
+
+// ── Read-only brain state ──
+async function loadBrain(){
+  try{
+    const r=await fetch('/api/state');const s=await r.json();
+    $('st').textContent=s.server_time;
+    const tr=s.trust||{},acc=s.accuracy||{},ait=s.ai_training||{};
+
+    // Trust
+    if(tr.trust_score!==undefined){
+      const ts=tr.trust_score;
+      $('brain-trust').textContent=ts.toFixed(0);$('brain-trust').style.color=ts>=65?'var(--g)':ts>=40?'var(--y)':'var(--r)';
+      $('brain-trust-bar').style.width=ts+'%';$('brain-trust-bar').style.background=ts>=65?'var(--g)':ts>=40?'var(--y)':'var(--r)';
+      $('brain-trust-label').textContent=ts<20?'No apuesta':ts<35?'Apuesta minima':ts<50?'Cauteloso':ts<65?'Normal':ts<80?'Agresivo':'Muy agresivo';
+      $('brain-mult').textContent='x'+tr.bet_multiplier.toFixed(1);
+      $('brain-early').textContent=(tr.early_bet_threshold||65)+'%';
+      $('brain-sessions').textContent=tr.sessions||0;
+    }
+
+    // Accuracy
+    if(acc.total>0){
+      $('acc-pct').textContent=acc.pct+'%';$('acc-pct').style.color=acc.pct>=55?'var(--g)':acc.pct>=45?'var(--y)':'var(--r)';
+      $('acc-detail').textContent=acc.correct+'/'+acc.total+' correctas';
+      $('acc-up').textContent=acc.up_acc+'%';$('acc-dn').textContent=acc.down_acc+'%';
+      if(acc.last5){let dh='';acc.last5.split('').forEach(c=>{dh+='<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 2px;background:'+(c==='W'?'var(--g)':'var(--r)')+'"></span>'});$('acc-streak').innerHTML=dh}
+    }
+
+    // Bias
+    const bo=ait.bias||{},bk=Object.keys(bo);
+    if(bk.length>0){let bh='';bk.forEach(k=>{bh+='<div style="padding:4px 0;border-bottom:1px solid var(--s2);color:var(--y)">\u26A0 '+escapeHtml(bo[k])+'</div>'});$('brain-bias').innerHTML=bh}
+    else{$('brain-bias').textContent='Sin sesgos — buen balance de predicciones'}
+
+    // Lessons
+    const ls=ait.lessons||[];
+    if(ls.length>0){let lh='';ls.forEach((l,i)=>{lh+='<div style="padding:4px 0;border-bottom:1px solid var(--s2)"><span style="color:var(--g);font-size:10px;margin-right:6px">#'+(i+1)+'</span>'+escapeHtml(l)+'</div>'});$('brain-lessons').innerHTML=lh}
+    else{$('brain-lessons').textContent='Sin lecciones aun \u2014 se generan automaticamente del historial y con IA local'}
+
+    // Multi-agent swarm
+    await loadSwarmBrain(s.swarm||{});
+  }catch(e){console.error(e)}
+}
+
+async function loadSwarmBrain(swarmState){
+  try{
+    const r=await fetch('/api/agents');
+    const agents=await r.json();
+    if(!agents||!agents.length){$('brain-swarm-section').style.display='none';return}
+    const active=agents.filter(a=>a.enabled);
+    if(active.length<=1){$('brain-swarm-section').style.display='none';return}
+
+    $('brain-swarm-section').style.display='block';
+    const grid=$('brain-swarm-grid');
+    grid.className=active.length<=3?'g'+active.length:'g4';
+    grid.innerHTML='';
+
+    active.forEach(a=>{
+      const p=a.portfolio||{};
+      const sig=swarmState[a.agent_id]||a.last_signal||null;
+      const bal=p.balance!=null?p.balance:100;
+      const pnl=p.total_profit||0;
+      const wr=p.win_rate||0;
+      const wins=p.wins||0;
+      const losses=p.losses||0;
+      const totalBets=p.total_bets||0;
+
+      const card=document.createElement('div');
+      card.className='brain-card';
+      card.style.cssText='background:var(--bg);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--bd)';
+      if(a.is_primary)card.style.borderColor='rgba(99,102,241,.3)';
+
+      let html='<div class="brain-lbl" style="display:flex;align-items:center;justify-content:center;gap:6px">';
+      html+='<span style="width:6px;height:6px;border-radius:50%;background:'+(sig&&sig.prediction?'var(--g)':'var(--t4)')+'"></span>';
+      html+=escapeHtml(a.display_name||a.agent_id);
+      if(a.is_primary)html+=' <span style="font-size:7px;background:rgba(99,102,241,.15);color:var(--b2);padding:1px 4px;border-radius:3px">PRIMARY</span>';
+      html+='</div>';
+      html+='<div style="font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:700;color:'+(bal>=100?'var(--g)':'var(--r)')+'">$'+bal.toFixed(2)+'</div>';
+      html+='<div style="font-size:11px;color:'+(pnl>=0?'var(--g)':'var(--r)')+';margin-top:4px">'+(pnl>=0?'+':'')+pnl.toFixed(2)+'</div>';
+      html+='<div style="display:flex;justify-content:space-around;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:9px">';
+      html+='<div><div style="color:var(--t4)">BETS</div><div style="font-weight:600">'+totalBets+'</div></div>';
+      html+='<div><div style="color:var(--t4)">W/L</div><div style="font-weight:600">'+wins+'/'+losses+'</div></div>';
+      html+='<div><div style="color:var(--t4)">WR</div><div style="font-weight:600;color:'+(wr>=50?'var(--g)':'var(--r)')+'">'+wr.toFixed(0)+'%</div></div>';
+      html+='</div>';
+
+      if(sig&&sig.prediction){
+        const isUp=sig.prediction==='UP';
+        html+='<div style="margin-top:8px;padding:6px;border-radius:4px;background:'+(isUp?'rgba(16,185,129,.06)':'rgba(239,68,68,.06)')+';border:1px solid '+(isUp?'#1e3a2e':'#3a1e1e')+';font-size:10px">';
+        html+='<span style="font-weight:700;color:'+(isUp?'var(--g)':'var(--r)')+'">'+(isUp?'\u25B2':'\u25BC')+' '+sig.prediction+'</span>';
+        html+=' <span style="color:var(--t3)">'+sig.confidence+'%</span>';
+        html+='</div>';
+      }
+
+      card.innerHTML=html;
+      grid.appendChild(card);
+    });
+  }catch(e){console.error('loadSwarmBrain',e)}
+}
+
+async function loadFeatureImportance(){
+  try{
+    const r=await fetch('/api/judge_features');const d=await r.json();
+    if(!d.ok){$('brain-features-section').style.display='none';return}
+    $('brain-features-section').style.display='block';
+    const fs=d.features;if(!fs||!fs.length)return;
+    const maxImp=fs[0].importance||1;
+    let h='';
+    fs.forEach(f=>{
+      const pct=Math.round((f.importance/maxImp)*100);
+      const color=pct>70?'var(--g)':pct>40?'var(--b2)':'var(--t4)';
+      h+='<div style="display:flex;align-items:center;margin-bottom:4px">';
+      h+='<span style="width:180px;color:var(--t2);font-family:monospace;font-size:10px">'+f.name+'</span>';
+      h+='<div style="flex:1;background:var(--s2);border-radius:3px;height:14px;overflow:hidden">';
+      h+='<div style="width:'+pct+'%;background:'+color+';height:100%;border-radius:3px;transition:width .3s"></div></div>';
+      h+='<span style="width:50px;text-align:right;color:var(--t3);font-size:10px;margin-left:8px">'+f.importance.toFixed(4)+'</span>';
+      h+='</div>';
+    });
+    $('brain-features-list').innerHTML=h;
+  }catch(e){console.error('loadFeatureImportance',e)}
+}
+
+// ── Watchful Hold ──
+let _whEnabled=false;
+async function loadWatchfulHold(){
+  try{
+    const r=await fetch('/api/watchful_hold');const d=await r.json();
+    _whEnabled=!!d.enabled;
+    const toggle=$('wh-toggle'); if(toggle) toggle.checked=_whEnabled;
+    if($('wh-consec')) $('wh-consec').value=d.upgrade_requires_consecutive_ok??2;
+    if($('wh-maxret')) $('wh-maxret').value=d.max_retries??10;
+    if($('wh-commit')) $('wh-commit').value=d.commit_ghost_before_close_sec??15;
+    if($('wh-interval')) $('wh-interval').value=d.retry_interval_sec??15;
+    _renderWhPill();
+  }catch(e){}
+}
+function _renderWhPill(){
+  const pill=$('wh-status');
+  if(!pill)return;
+  if(_whEnabled){
+    pill.textContent='ACTIVO';pill.style.background='rgba(16,185,129,.15)';pill.style.color='var(--neon-green)';
+  }else{
+    pill.textContent='INACTIVO';pill.style.background='var(--s2)';pill.style.color='var(--t3)';
+  }
+}
+async function toggleWatchfulHold(){
+  try{
+    const r=await fetch('/api/watchful_hold',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:!_whEnabled})});
+    const d=await r.json();
+    if(d.ok){_whEnabled=!_whEnabled;_renderWhPill();const t=$('wh-toggle');if(t)t.checked=_whEnabled}
+  }catch(e){}
+}
+
+// ── Risk Presets ──
+async function loadRiskPresetUI(){
+  try{
+    const r=await fetch('/api/rules');const d=await r.json();
+    let preset='calibrated';
+    if(d.ev_gate&&d.ev_gate._ui_preset)preset=d.ev_gate._ui_preset;
+    const rdo=document.querySelector('input[name="risk_preset"][value="'+preset+'"]');
+    if(rdo)rdo.checked=true;
+  }catch(e){}
+}
+async function applyRiskPreset(){
+  const sel=document.querySelector('input[name="risk_preset"]:checked');
+  if(!sel)return;
+  const preset=sel.value;
+  const msg=$('msg-preset');
+  if(msg){msg.textContent='Aplicando...';msg.style.color='var(--y)'}
+  try{
+    const r=await fetch('/api/update_risk_preset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({preset})});
+    const d=await r.json();
+    if(d.ok){
+      if(msg){msg.textContent='✅ Perfil '+d.preset.toUpperCase()+' activado';msg.style.color='var(--neon-green)'}
+      loadBrainConfig(); // refresh all inputs with new values
+    }else{
+      if(msg){msg.textContent='❌ '+(d.error||'Error');msg.style.color='var(--r)'}
+    }
+  }catch(e){if(msg){msg.textContent='❌ Error de red';msg.style.color='var(--r)'}}
+  setTimeout(()=>{if(msg)msg.textContent=''},5000);
+}
+
+// ── Boot ──
+loadBrain();loadBrainConfig();loadFeatureImportance();loadWatchfulHold();loadRiskPresetUI();
+const _brainIntervals=[setInterval(loadBrain,5000),setInterval(loadFeatureImportance,30000)];
+window.addEventListener('beforeunload',()=>_brainIntervals.forEach(id=>clearInterval(id)));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)_brainIntervals.forEach(id=>clearInterval(id))});
+{% endblock %}

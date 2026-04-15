@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Delta Divergence Reversal (5m)",
+  "concept_family": "Order Flow | Delta",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "medium-high",
+    "market_phase": "reversal"
+  },
+  "entry_rules": [
+    "Monitorear el delta acumulado (buy volume - sell volume) en velas de 5m.",
+    "Identificar divergencia: el precio hace un nuevo máximo pero el delta acumulado es menor que el máximo anterior (divergencia bajista), o viceversa.",
+    "Confirmar con volumen total decreciente en el último impulso (agotamiento).",
+    "Entrar en la dirección de la divergencia cuando se produce un CHOCH o MSS en la estructura de 5m.",
+    "Confluencia extra: si el funding rate de Binance es extremo en la misma dirección, la reversión es más probable."
+  ],
+  "invalidation_condition": "El delta se renueva y confirma la dirección del precio (la divergencia se invalida con nuevo momentum)."
+}

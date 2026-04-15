@@ -1,0 +1,17 @@
+{
+  "strategy_name": "Elliott Wave 3 Entry (5m)",
+  "concept_family": "Elliott Wave",
+  "optimal_context": {
+    "sentiment": "trending",
+    "volatility": "medium",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar Onda 1 completa: un impulso direccional claro desde un mínimo/máximo significativo.",
+    "Esperar Onda 2 correctiva: retroceso entre 50%-78.6% de la Onda 1 (idealmente zona 61.8%).",
+    "Confirmar que Onda 2 NO retrocede más allá del inicio de Onda 1 (regla de validación).",
+    "Entrar al inicio de Onda 3: cuando el precio rompe el extremo de la Onda 1 con momentum creciente.",
+    "La Onda 3 suele ser la más larga y explosiva — objetivo mínimo: extensión 161.8% de Onda 1."
+  ],
+  "invalidation_condition": "La Onda 2 retrocede más del 100% de la Onda 1 (invalida el conteo). El precio no logra romper el extremo de Onda 1 con volumen."
+}

@@ -1,0 +1,21 @@
+flask>=3.0,<4.0
+joblib>=1.3,<2.0
+pandas>=2.1,<3.0
+python-dotenv>=1.0,<2.0
+requests>=2.31,<3.0
+scikit-learn>=1.3,<2.0
+websocket-client>=1.7,<2.0
+xgboost>=2.0,<3.0
+chromadb>=0.5,<0.5.20  # pin: ≥0.5.20 ships Rust .pyd blocked by WDAC on Windows
+
+# ── Security ──
+defusedxml>=0.7  # XXE-safe XML parsing for RSS feeds
+
+# ── Web3 Execution (py-clob-client — official Polymarket CLOB client) ──
+# Native integration with Polymarket L2 (Polygon) contracts. Supports
+# delegated proxy wallets (Email/Google login) via signature_type=1.
+py-clob-client>=0.17,<1.0
+eth-account>=0.10,<1.0
+
+# ── Observability (Prometheus metrics) ──
+prometheus-client>=0.20,<1.0

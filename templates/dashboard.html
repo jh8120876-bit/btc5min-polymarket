@@ -1,0 +1,1389 @@
+{% extends "base.html" %}
+{% block title %}BTC Predictor v3 — Torre de Control{% endblock %}
+{% block extra_css %}
+/* ══════════════════════════════════════════════════════════
+   CYBERPUNK QUANT — Torre de Control Dashboard
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Glass Panel ── */
+.qpanel{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);border-radius:12px;padding:16px;margin-bottom:12px;transition:border-color .3s,background .3s,box-shadow .3s}
+.qpanel-hdr{font-size:9px;letter-spacing:2px;color:var(--t4);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--glass-border);padding-bottom:8px}
+
+/* ── Tags ── */
+.qtag{font-size:8px;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.qtag.live{background:rgba(0,255,136,.12);color:var(--neon-green);box-shadow:0 0 8px rgba(0,255,136,.15)}
+.qtag.warn{background:rgba(245,158,11,.12);color:var(--y)}
+.qtag.danger{background:rgba(255,51,102,.12);color:var(--neon-red);box-shadow:0 0 8px rgba(255,51,102,.15)}
+.qtag.info{background:rgba(0,212,255,.1);color:var(--neon-cyan)}
+.qtag.offline{background:rgba(255,51,102,.08);color:var(--neon-red);animation:pulse-offline 1.5s infinite}
+
+/* ── Tab system ── */
+.tabs{display:flex;gap:2px;background:var(--glass);backdrop-filter:var(--glass-blur);border-radius:10px;padding:3px;margin-bottom:14px;border:1px solid var(--glass-border)}
+.tabs button{flex:1;background:none;border:none;color:var(--t3);font-family:inherit;font-size:10px;letter-spacing:1.5px;padding:10px 6px;border-radius:8px;cursor:pointer;font-weight:600;transition:all .25s;text-transform:uppercase}
+.tabs button:hover{color:var(--t1);background:rgba(0,212,255,.06)}
+.tabs button.active{color:var(--neon-cyan);background:rgba(0,212,255,.08);box-shadow:0 0 12px rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.15)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── Grid System ── */
+.qgrid{display:grid;gap:12px;margin-bottom:12px}
+.qg-2{grid-template-columns:1fr 1fr}
+.qg-3{grid-template-columns:1fr 1fr 1fr}
+.qg-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.qg-5{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
+.qg-32{grid-template-columns:3fr 2fr}
+.qg-21{grid-template-columns:2fr 1fr}
+
+/* ── Circuit Breaker Overlay ── */
+.cb-overlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(255,51,102,.08);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.cb-overlay.active{display:flex}
+.cb-box{background:rgba(15,23,42,.95);border:2px solid var(--neon-red);border-radius:16px;padding:40px;text-align:center;max-width:500px;box-shadow:0 0 40px rgba(255,51,102,.3);animation:cb-pulse 2s infinite}
+.cb-box h2{font-family:'Space Grotesk',sans-serif;font-size:28px;color:var(--neon-red);margin-bottom:12px;letter-spacing:2px}
+.cb-box p{color:var(--t2);font-size:12px;line-height:1.7;margin-bottom:20px}
+.cb-box button{background:var(--neon-red);color:#fff;border:none;padding:12px 32px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s}
+.cb-box button:hover{background:#e6294f;box-shadow:0 0 20px rgba(255,51,102,.4)}
+
+/* ── Live Pulse (Top Banner) ── */
+.pulse-banner{border-radius:12px;padding:14px 20px;margin-bottom:12px;border:1px solid var(--glass-border);background:var(--glass);backdrop-filter:var(--glass-blur);position:relative;overflow:hidden;transition:all .4s}
+.pulse-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--neon-cyan),transparent);opacity:.5}
+.pulse-banner.up{border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.03)}
+.pulse-banner.up::before{background:linear-gradient(90deg,transparent,var(--neon-green),transparent)}
+.pulse-banner.dn{border-color:rgba(255,51,102,.2);background:rgba(255,51,102,.03)}
+.pulse-banner.dn::before{background:linear-gradient(90deg,transparent,var(--neon-red),transparent)}
+.pulse-banner.halted{border-color:var(--neon-red);background:rgba(255,51,102,.06);animation:cb-pulse 2s infinite}
+
+/* ── Price Display ── */
+.price-big{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;color:#fff;letter-spacing:-1px;transition:color .3s}
+.price-change{font-size:12px;font-weight:600;margin-top:4px;display:flex;align-items:center;gap:6px;transition:color .3s}
+.price-change.up{color:var(--neon-green)}.price-change.dn{color:var(--neon-red)}
+
+/* ── Timer ── */
+.timer{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;transition:color .3s}
+.timer.dng{color:var(--neon-red);animation:p .5s infinite}
+.timer.wrn{color:var(--y)}.timer.nrm{color:var(--neon-cyan)}
+
+/* ── Swarm Arena (Agent Cards) ── */
+.agent-card{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);border-radius:12px;padding:14px;transition:all .35s;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;transition:background .3s}
+.agent-card.active-up{border-color:rgba(0,255,136,.2)}.agent-card.active-up::before{background:var(--neon-green)}
+.agent-card.active-dn{border-color:rgba(255,51,102,.2)}.agent-card.active-dn::before{background:var(--neon-red)}
+.agent-card.offline{opacity:.5;border-style:dashed;border-color:rgba(255,51,102,.2)}
+.agent-card.ghost{border-color:rgba(245,158,11,.25);opacity:.7}
+.agent-card .ac-name{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.agent-card .ac-strategy{font-size:8px;color:var(--t4);letter-spacing:1px;margin-bottom:10px}
+.agent-card .ac-decision{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;text-align:center;margin:8px 0;transition:color .3s}
+.agent-card .ac-conf{margin-bottom:8px}
+.agent-card .ac-layer{font-size:9px;text-align:center;margin-bottom:8px;min-height:18px}
+.agent-card .ac-balance{padding-top:10px;border-top:1px solid var(--glass-border);margin-top:8px;transition:color .3s}
+.agent-card .ac-bal-main{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.agent-card .ac-bal-value{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;text-shadow:0 0 12px currentColor}
+.agent-card .ac-pnl-value{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+.agent-card .ac-bal-stats{display:flex;justify-content:space-between;font-size:9px;color:var(--t4)}
+.agent-card .ac-offline-label{text-align:center;padding:16px 0;font-size:11px;color:var(--neon-red);font-weight:700;letter-spacing:2px;animation:pulse-offline 1.5s infinite}
+
+/* ── Signal Panel ── */
+.signal-panel{animation:glow-signal 4s infinite;border-color:rgba(99,102,241,.15)}
+@keyframes glow-signal{0%,100%{box-shadow:0 0 15px rgba(99,102,241,.1)}50%{box-shadow:0 0 30px rgba(99,102,241,.25)}}
+
+/* ── Odds Cards ── */
+.odds-card{border-radius:10px;padding:14px;text-align:center;border:1px solid;transition:all .3s;cursor:pointer;background:var(--glass);backdrop-filter:var(--glass-blur)}
+.odds-card.up{border-color:rgba(0,255,136,.15)}.odds-card.up:hover{border-color:rgba(0,255,136,.4);box-shadow:0 0 16px rgba(0,255,136,.1)}
+.odds-card.dn{border-color:rgba(255,51,102,.15)}.odds-card.dn:hover{border-color:rgba(255,51,102,.4);box-shadow:0 0 16px rgba(255,51,102,.1)}
+.odds-price{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700}
+
+/* ── Active Bet ── */
+.bet-card{background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.25);border-radius:12px;padding:14px;animation:su .3s ease;backdrop-filter:var(--glass-blur)}
+
+/* ── Metrics ── */
+.qmetric{text-align:center;padding:10px 4px}
+.qmetric .qlabel{font-size:8px;color:var(--t4);letter-spacing:1.5px;margin-bottom:4px;text-transform:uppercase}
+.qmetric .qvalue{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;transition:color .3s}
+.qmetric .qsub{font-size:8px;color:var(--t4);margin-top:2px}
+
+/* ── Reasoning ── */
+.reasoning{font-size:11px;color:var(--t2);line-height:1.6;padding:10px;background:rgba(10,14,23,.6);border-radius:6px;margin-top:8px;border-left:2px solid var(--glass-border)}
+
+/* ── History Table ── */
+
+/* ── Badges ── */
+.badge{font-size:8px;padding:2px 8px;border-radius:6px;font-weight:700;letter-spacing:.5px;display:inline-block}
+
+/* ── Sniper Radar ── */
+.sniper-eval{flex:1;min-width:80px;max-width:160px;background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px;text-align:center;position:relative;transition:all .3s;backdrop-filter:var(--glass-blur)}
+.sniper-eval.up{border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.04)}
+.sniper-eval.dn{border-color:rgba(255,51,102,.2);background:rgba(255,51,102,.04)}
+.sniper-eval.consensus{border-color:var(--neon-cyan);background:rgba(0,212,255,.08);box-shadow:0 0 16px rgba(0,212,255,.15)}
+.sniper-eval .se-min{font-size:8px;color:var(--t4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.sniper-eval .se-dir{font-size:14px;font-weight:700;font-family:'Space Grotesk',sans-serif}
+.sniper-eval .se-conf{font-size:10px;color:var(--t3);margin-top:2px}
+.sniper-eval .se-arrow{position:absolute;right:-6px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t4)}
+@keyframes sniper-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.sniper-scanning{animation:sniper-pulse 1.5s ease-in-out infinite}
+
+/* ── Observer Console ── */
+.observer-console{background:rgba(10,14,23,.7);border:1px solid var(--glass-border);border-radius:10px;padding:14px;min-height:200px;max-height:500px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--s2) transparent;font-size:11px;line-height:1.7;color:var(--t2)}
+.observer-entry{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.observer-entry:last-child{border-bottom:none}
+.observer-ts{color:var(--t4);font-size:9px;margin-right:8px;font-family:'Space Grotesk',sans-serif}
+
+/* ── Streak Dots ── */
+.streak-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 1px;transition:background .3s}
+.streak-dot.w{background:var(--neon-green);box-shadow:0 0 4px rgba(0,255,136,.4)}
+.streak-dot.l{background:var(--neon-red);box-shadow:0 0 4px rgba(255,51,102,.4)}
+
+/* ── Momentum Arrow ── */
+.mom-arrow{font-size:16px;font-weight:700;margin-left:6px;display:inline-block}
+.mom-arrow.strong-up{color:var(--neon-green)}.mom-arrow.up{color:var(--neon-green)}
+.mom-arrow.neutral{color:var(--t4)}.mom-arrow.down{color:var(--neon-red)}.mom-arrow.strong-down{color:var(--neon-red)}
+
+/* ── Equity Chart ── */
+.equity-wrap{position:relative;height:140px;width:100%}
+
+/* ── Scrollbar ── */
+
+/* ── Manual Bet Panel ── */
+#manual-bet-panel input:focus{border-color:var(--neon-cyan);outline:none;box-shadow:0 0 8px rgba(0,212,255,.15)}
+#manual-bet-panel button:hover{opacity:.85}
+
+/* ── ML Judge Toggle ── */
+#ml-judge-toggle:checked+span{background:rgba(139,92,246,.5)}
+#ml-judge-toggle:checked~#ml-toggle-dot{transform:translateX(16px);background:rgb(139,92,246)}
+
+/* ── Live Mode Toggle ── */
+.live-mode-btn{background:rgba(0,255,136,.12);color:var(--neon-green);border:1px solid rgba(0,255,136,.25);padding:4px 10px;border-radius:6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;cursor:pointer;letter-spacing:1px;transition:all .3s;box-shadow:0 0 10px rgba(0,255,136,.15)}
+.live-mode-btn:hover{background:rgba(0,255,136,.2)}
+.paper-mode-btn{background:rgba(255,255,255,.05);color:var(--t4);border:1px solid var(--glass-border);padding:4px 10px;border-radius:6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;cursor:pointer;letter-spacing:1px;transition:all .3s}
+.paper-mode-btn:hover{background:rgba(255,255,255,.1)}
+
+/* ── Animations ── */
+@keyframes cb-pulse{0%,100%{box-shadow:0 0 20px rgba(255,51,102,.2)}50%{box-shadow:0 0 40px rgba(255,51,102,.4)}}
+@keyframes pulse-offline{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow-neon{0%,100%{text-shadow:0 0 8px currentColor}50%{text-shadow:0 0 16px currentColor}}
+
+/* ── Smooth transitions for polled values ── */
+.smooth-value{transition:color .3s ease,opacity .2s ease}
+.mid-badge{font-size:8px;background:rgba(0,212,255,.12);color:var(--neon-cyan);padding:2px 8px;border-radius:4px;margin-left:8px}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .price-big{font-size:28px}
+  .timer{font-size:26px}
+  .tabs button{font-size:8px;padding:8px 3px;letter-spacing:1px}
+  .qgrid.qg-2,.qgrid.qg-3,.qgrid.qg-32,.qgrid.qg-21{grid-template-columns:1fr}
+  .qgrid.qg-4{grid-template-columns:1fr 1fr}
+  .qgrid.qg-5{grid-template-columns:1fr 1fr 1fr}
+  .qmetric .qvalue{font-size:14px}
+}
+@media(max-width:480px){
+  .qgrid.qg-4,.qgrid.qg-5{grid-template-columns:1fr 1fr}
+  .price-big{font-size:24px}
+  .equity-wrap{height:90px}
+}
+{% endblock %}
+
+{% block content %}
+<!-- ═══ CIRCUIT BREAKER OVERLAY ═══ -->
+<div class="cb-overlay" id="cb-overlay">
+  <div class="cb-box">
+    <h2>IA PRINCIPAL HALTED</h2>
+    <p id="cb-overlay-reason">API Error desconocido</p>
+    <p style="font-size:10px;color:var(--t4)">El sistema sigue guardando precios. Las predicciones estan pausadas.</p>
+    <button onclick="resumePrimary()">REANUDAR MOTOR</button>
+  </div>
+</div>
+
+<!-- ═══ GLOBAL STATUS BAR ═══ -->
+<div class="mini-status" style="font-size:10px;gap:10px">
+  <div><div class="fd" style="background:var(--t4);display:inline-block;vertical-align:middle;margin-right:3px;width:5px;height:5px;border-radius:50%"></div><span id="feed-status-text" style="color:var(--t3)">Server...</span></div>
+  <div><div class="fd" style="background:var(--t4);display:inline-block;vertical-align:middle;margin-right:3px;width:5px;height:5px;border-radius:50%"></div><span id="ws-status-text" style="color:var(--t3)">WS: Connecting...</span></div>
+  <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+    <button id="master-live-btn" class="paper-mode-btn" onclick="toggleLiveMode()" style="margin-right:10px">PAPER TRADING</button>
+    <button id="live-sizing-btn" class="paper-mode-btn" onclick="toggleLiveSizing()" style="margin-right:10px">SALDO SIMULADO</button>
+    <span style="color:var(--t4)">TRUST</span>
+    <span id="trust-score" style="font-weight:700;font-family:'Space Grotesk',sans-serif" class="smooth-value">--</span>
+    <span id="trust-mult" style="font-size:9px;color:var(--t4)">--</span>
+    <span style="color:var(--t4);margin-left:4px">BET:</span>
+    <span id="bet-status-tag" class="qtag info">--</span>
+    <span id="cb-indicator" style="display:none;margin-left:6px;border-left:1px solid var(--glass-border);padding-left:10px"><span class="qtag danger" style="animation:pulse-offline 1s infinite">CIRCUIT BREAKER</span></span>
+    <span style="color:var(--t4);margin-left:6px;border-left:1px solid var(--glass-border);padding-left:10px">ML JUDGE</span>
+    <label style="position:relative;display:inline-block;width:32px;height:16px;margin:0;cursor:pointer">
+      <input type="checkbox" id="ml-judge-toggle" style="opacity:0;width:0;height:0" onchange="toggleMlJudge(this.checked)">
+      <span style="position:absolute;inset:0;background:var(--glass-border);border-radius:8px;transition:.3s"></span>
+      <span style="position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:.3s" id="ml-toggle-dot"></span>
+    </label>
+    <span id="ml-judge-badge" class="qtag info" style="font-size:8px">ML OFF</span>
+  </div>
+</div>
+
+<div id="naw" class="qpanel" style="display:none;background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.15);color:var(--y);font-size:11px">
+  <strong>Sin API Key del motor primario.</strong> Usando analisis tecnico local. Configura la API Key en <a href="/config" style="color:var(--y)">Config</a>
+</div>
+
+
+<!-- ═══ TAB NAVIGATION ═══ -->
+<div class="tabs">
+  <button class="active" onclick="switchTab('live',this)">TORRE DE CONTROL</button>
+  <button onclick="switchTab('intel',this)">INTELIGENCIA</button>
+  <button onclick="switchTab('observer',this)">OBSERVER</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 1: TORRE DE CONTROL
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-live" class="tab-pane active">
+  <!-- Live Pulse Widget -->
+  <div class="pulse-banner" id="live-pulse-widget" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
+        <span id="pulse-widget-dot" style="width:10px;height:10px;border-radius:50%;background:var(--neon-green);animation:p 2s infinite;flex-shrink:0"></span>
+        <div>
+          <div style="font-size:8px;color:var(--t4);letter-spacing:2px;margin-bottom:2px">LIVE PULSE &bull; OBSERVER AI</div>
+          <div id="pulse-widget-text" style="font-size:11px;color:var(--t2);line-height:1.5">Esperando observador...</div>
+        </div>
+      </div>
+      <div id="pulse-widget-conclusion" style="display:none;text-align:center;min-width:120px">
+        <div id="pulse-widget-dir" style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700" class="smooth-value">--</div>
+        <div id="pulse-widget-age" style="font-size:8px;color:var(--t4);margin-top:2px">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Halted Banner (inline) -->
+  <div id="primary-halted-banner" class="pulse-banner halted" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">&#9888;</span>
+        <div>
+          <div style="font-size:10px;color:var(--neon-red);font-weight:700;letter-spacing:2px;margin-bottom:3px">IA PRINCIPAL HALTED</div>
+          <div id="primary-halted-reason" style="font-size:11px;color:var(--t2)">--</div>
+        </div>
+      </div>
+      <button onclick="resumePrimary()" style="background:var(--neon-red);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer">REANUDAR</button>
+    </div>
+  </div>
+
+  <!-- Price + Timer -->
+  <div class="qgrid qg-32">
+    <div class="qpanel" style="position:relative;overflow:hidden">
+      <div class="qpanel-hdr">
+        <span>BTC/USD &bull; <span id="price-source">CHAINLINK</span> via POLYMARKET RTDS</span>
+        <span class="mom-arrow neutral" id="mom-arrow">&mdash;</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="price-big" id="cp">$&mdash;</div>
+        <div id="ws-price" style="font-size:10px;color:var(--neon-cyan);display:none">WS: $<span id="ws-price-val">&mdash;</span></div>
+      </div>
+      <div class="price-change" id="pcx"><span id="pa">&mdash;</span><span id="pdi">&mdash;</span><span id="ppc">(&mdash;%)</span><span style="font-size:9px;color:var(--t4);margin-left:8px" id="pvs">&mdash;</span></div>
+      <canvas id="spark" style="height:50px;width:100%;margin-top:6px"></canvas>
+    </div>
+    <div class="qpanel" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+      <div class="qpanel-hdr" style="width:100%"><span>VENTANA ACTIVA</span><span class="qtag live" id="window-tag">LIVE</span></div>
+      <div class="timer" id="tm" style="margin:8px 0">&mdash;:&mdash;</div>
+      <div style="font-size:9px;color:var(--t4)" id="wid">&mdash;</div>
+      <div style="margin-top:10px">
+        <div style="font-size:9px;color:var(--t4);letter-spacing:1px;margin-bottom:4px">PRECIO APERTURA</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff" id="opr">$&mdash;</div>
+        <div style="font-size:10px;margin-top:4px" id="dir" class="smooth-value">&mdash;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Status Banner -->
+  <div class="qpanel" id="live-status" style="border-width:2px;padding:12px 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:9px;color:var(--t4);letter-spacing:2px;margin-bottom:4px">AHORA MISMO</div>
+        <div id="live-verdict" style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700" class="smooth-value">--</div>
+        <div id="live-explain" style="font-size:10px;color:var(--t2);margin-top:3px">--</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--t4);letter-spacing:2px;margin-bottom:4px">SI CIERRA AHORA</div>
+        <div id="live-side-tag" style="font-size:18px;font-weight:700;font-family:'Space Grotesk',sans-serif" class="smooth-value">--</div>
+        <div id="live-rec" style="font-size:10px;margin-top:3px">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SWARM ARENA ═══ -->
+  <div class="qpanel" id="swarm-arena">
+    <div class="qpanel-hdr">
+      <span>CONSEJO DE AGENTES</span>
+      <span class="qtag info" id="swarm-count-tag">0 AGENTES</span>
+    </div>
+    <div id="swarm-grid" class="qgrid qg-3" style="margin-bottom:0"></div>
+  </div>
+
+  <!-- AI Signal + Active Bet -->
+  <div class="qgrid qg-21">
+    <div class="qpanel signal-panel" id="sigc" style="transition:opacity .3s">
+      <div class="qpanel-hdr">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span>PREDICCION AI</span>
+          <span class="mid-badge" id="mid-badge" style="display:none">Actualizado</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="sb" id="sbb">&mdash;</span>
+          <span class="rb" id="rbb">&mdash;</span>
+        </div>
+      </div>
+      <div id="ai-bet-banner" style="display:none;text-align:center;padding:10px;border-radius:8px;margin-bottom:10px">
+        <div style="font-size:9px;letter-spacing:2px;margin-bottom:3px" id="ai-bet-label">AI PREDICE</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700" id="ai-bet-dir" class="smooth-value">--</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;color:var(--t4);min-width:55px">Confianza</span>
+        <div class="cbar" style="flex:1"><div class="cfill" id="cf"></div></div>
+        <span id="cv" style="font-size:13px;font-weight:700;min-width:32px;font-family:'Space Grotesk',sans-serif" class="smooth-value">&mdash;</span>
+        <span id="cv-orig" style="font-size:9px;color:var(--t4);display:none">(orig: <span id="cv-orig-val"></span>)</span>
+      </div>
+      <!-- Layer Alignment -->
+      <div id="layer-alignment-row" style="display:none;margin-top:6px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;color:var(--t4);min-width:55px">Capas</span>
+        <span id="layer-alignment-badge" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;letter-spacing:.5px"></span>
+        <span id="layer-alignment-detail" style="font-size:9px;color:var(--t3)"></span>
+      </div>
+      <!-- ML Oracle -->
+      <div id="oracle-row" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;font-size:10px;display:flex;align-items:center;gap:8px">
+        <span style="min-width:55px;font-size:9px;color:var(--t4)">Oraculo</span>
+        <div class="cbar" style="flex:1"><div class="cfill" id="oracle-bar" style="background:var(--neon-cyan)"></div></div>
+        <span id="oracle-pct" style="font-size:12px;font-weight:700;min-width:32px;font-family:'Space Grotesk',sans-serif" class="smooth-value">--</span>
+      </div>
+      <div id="oracle-banner" style="display:none;text-align:center;padding:8px 12px;border-radius:6px;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:1px"></div>
+      <div class="reasoning" id="rsn">Esperando primera ventana...</div>
+      <div class="reasoning" id="ns" style="margin-top:6px;border-left:2px solid var(--neon-cyan);padding-left:12px;display:none"></div>
+      <!-- Swarm votes summary -->
+      <div id="swarm-votes" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(10,14,23,.5);border-radius:8px;border:1px solid var(--glass-border)">
+        <div style="font-size:8px;color:var(--t4);letter-spacing:1.5px;margin-bottom:6px">VOTOS DEL ENJAMBRE</div>
+        <div id="swarm-votes-list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Active bet card -->
+      <div class="bet-card" id="bc" style="display:none">
+        <div class="qpanel-hdr" style="border-bottom:none;padding-bottom:0;margin-bottom:6px">
+          <span id="bet-type-label">APUESTA ACTIVA</span>
+          <span class="sb" id="bsb">&mdash;</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+          <div><div style="font-size:8px;color:var(--t4);letter-spacing:1px">APOSTADO</div><div style="font-weight:700;font-family:'Space Grotesk',sans-serif" id="ba">&mdash;</div></div>
+          <div><div style="font-size:8px;color:var(--t4);letter-spacing:1px">PRECIO</div><div style="font-weight:700;font-family:'Space Grotesk',sans-serif" id="bp">&mdash;</div></div>
+          <div><div style="font-size:8px;color:var(--t4);letter-spacing:1px">PAGO SI GANA</div><div style="font-weight:700;color:var(--neon-green);font-family:'Space Grotesk',sans-serif" id="bpy">&mdash;</div></div>
+          <div><div style="font-size:8px;color:var(--t4);letter-spacing:1px">P&amp;L EN VIVO</div><div style="font-weight:700;font-size:16px;font-family:'Space Grotesk',sans-serif" id="b-live-pnl" class="smooth-value">&mdash;</div></div>
+        </div>
+        <div id="b-live-status" style="margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;text-align:center">--</div>
+      </div>
+      <div class="qpanel" id="nbc" style="display:none">
+        <div style="font-size:10px;color:var(--t3);text-align:center;padding:8px 0">Risk Manager: <span id="nbr">&mdash;</span></div>
+      </div>
+
+      <!-- Odds + Manual bet -->
+      <div class="qpanel">
+        <div class="qpanel-hdr"><span>ODDS EN VIVO</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="odds-card up" onclick="showBetPanel('UP')">
+            <div class="odds-price" id="uo" style="color:var(--neon-green)">&mdash;&cent;</div>
+            <div style="font-size:9px;color:var(--g2)">UP</div>
+            <div style="font-size:8px;color:var(--t4);margin-top:3px" id="uo-gain">--</div>
+          </div>
+          <div class="odds-card dn" onclick="showBetPanel('DOWN')">
+            <div class="odds-price" id="do" style="color:var(--neon-red)">&mdash;&cent;</div>
+            <div style="font-size:9px;color:var(--r2)">DOWN</div>
+            <div style="font-size:8px;color:var(--t4);margin-top:3px" id="do-gain">--</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;text-align:center">
+          <button onclick="showBetPanel(lastState&&lastState.signal?lastState.signal.prediction:'UP')" style="background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--neon-cyan);font-size:9px;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:all .2s" onmouseover="this.style.background='rgba(0,212,255,.15)'" onmouseout="this.style.background='rgba(0,212,255,.08)'">APOSTAR MANUAL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual bet panel (hidden) -->
+  <div class="qpanel" id="manual-bet-panel" style="display:none;border-color:rgba(0,212,255,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--neon-cyan);font-weight:600;letter-spacing:2px">APOSTAR MANUALMENTE</div>
+      <span style="cursor:pointer;color:var(--t3);font-size:14px" onclick="manualBetOpen=false;$('manual-bet-panel').style.display='none'">&times;</span>
+    </div>
+    <div style="text-align:center;margin-bottom:12px">
+      <span style="font-size:12px">Apostar a </span>
+      <span id="mb-side-label" style="font-size:16px;font-weight:700">--</span>
+      <span style="font-size:12px"> @ </span>
+      <span id="mb-odds-label" style="font-size:16px;font-weight:700">--&cent;</span>
+    </div>
+    <div id="mb-amounts" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="number" id="mb-custom" placeholder="Monto custom" style="flex:1;background:rgba(10,14,23,.6);border:1px solid var(--glass-border);border-radius:6px;padding:8px 12px;color:var(--t1);font-family:inherit;font-size:12px;outline:none;transition:all .2s">
+      <button onclick="placeBet()" style="background:var(--neon-cyan);color:#0a0e17;border:none;border-radius:6px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s">APOSTAR</button>
+    </div>
+    <div id="mb-error" style="font-size:10px;color:var(--neon-red);margin-top:6px;display:none"></div>
+  </div>
+
+  <!-- Portfolio Summary -->
+  <div class="qgrid qg-5">
+    <div class="qmetric"><div class="qlabel">BALANCE</div><div class="qvalue smooth-value" id="bal">$&mdash;</div></div>
+    <div class="qmetric"><div class="qlabel">PnL TOTAL</div><div class="qvalue smooth-value" id="pnl">$&mdash;</div></div>
+    <div class="qmetric"><div class="qlabel">WIN RATE</div><div class="qvalue smooth-value" id="wr">&mdash;%</div></div>
+    <div class="qmetric"><div class="qlabel">TRADES</div><div class="qvalue" id="total-bets">&mdash;</div></div>
+    <div class="qmetric"><div class="qlabel">DRAWDOWN</div><div class="qvalue smooth-value" id="dd">&mdash;%</div></div>
+  </div>
+
+  <!-- Streak + Accuracy -->
+  <div class="qpanel" style="padding:10px 14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:8px;color:var(--t4);letter-spacing:1px">RACHA</span>
+        <span id="streak-dots"></span>
+      </div>
+      <div style="font-size:10px">
+        <span style="color:var(--t4)">AI Acc:</span>
+        <span id="ai-acc" style="font-weight:600" class="smooth-value">&mdash;</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equity Curve -->
+  <div class="qpanel">
+    <div class="qpanel-hdr"><span>EQUITY CURVE</span></div>
+    <div class="equity-wrap"><canvas id="equity-chart"></canvas></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 2: INTELIGENCIA
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-intel" class="tab-pane">
+  <!-- Sniper Radar -->
+  <div class="qpanel" id="sniper-radar" style="display:none">
+    <div class="qpanel-hdr">
+      <span>SNIPER EXECUTION RADAR</span>
+      <span class="qtag info" id="sniper-tag">STANDBY</span>
+    </div>
+    <div id="sniper-timeline" style="display:flex;gap:6px;align-items:stretch;min-height:56px;flex-wrap:wrap"></div>
+    <div id="sniper-alert" style="display:none;margin-top:8px;padding:8px 12px;border-radius:6px;font-size:11px;font-weight:600;text-align:center"></div>
+  </div>
+
+  <!-- Swarm Summary -->
+  <div class="qpanel">
+    <div class="qpanel-hdr"><span>RESUMEN ENJAMBRE</span><span class="qtag info" id="pf-tag">SWARM</span></div>
+    <div class="qgrid qg-4" style="margin-bottom:0">
+      <div class="qmetric"><div class="qlabel">AGENTES</div><div class="qvalue" id="swarm-total-agents">--</div></div>
+      <div class="qmetric"><div class="qlabel">BAL. COMBINADO</div><div class="qvalue smooth-value" id="swarm-total-bal" style="color:var(--neon-green)">$&mdash;</div></div>
+      <div class="qmetric"><div class="qlabel">PnL ENJAMBRE</div><div class="qvalue smooth-value" id="swarm-total-pnl">$&mdash;</div></div>
+      <div class="qmetric"><div class="qlabel">WIN RATE AVG</div><div class="qvalue smooth-value" id="swarm-avg-wr">&mdash;%</div></div>
+    </div>
+  </div>
+
+  <!-- Sentiment -->
+  <div class="qgrid qg-2">
+    <div class="qpanel">
+      <div class="qpanel-hdr"><span>FEAR &amp; GREED INDEX</span><span class="qtag info" id="fg-tag">--</span></div>
+      <div style="text-align:center;padding:12px 0">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:700" id="fg-value" class="smooth-value">--</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:6px" id="fg-label">Cargando...</div>
+      </div>
+    </div>
+    <div class="qpanel">
+      <div class="qpanel-hdr"><span>TITULARES / RSS</span></div>
+      <div id="headlines-list" style="font-size:10px;color:var(--t3);line-height:1.7;max-height:160px;overflow-y:auto;scrollbar-width:thin">Cargando RSS...</div>
+    </div>
+  </div>
+
+  <!-- RAG Strategy -->
+  <div class="qpanel">
+    <div class="qpanel-hdr">
+      <span>ESTRATEGIA RAG</span>
+      <span class="qtag info" id="rag-count-tag">0 estrategias</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;padding:10px 0">
+      <div style="flex:1">
+        <div style="font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Estrategia Inyectada</div>
+        <div id="rag-active-name" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--t3)">Sin RAG</div>
+        <div id="rag-blacklist-info" style="font-size:9px;color:var(--y);margin-top:4px;display:none"></div>
+      </div>
+      <div id="rag-badge" style="display:none;padding:4px 10px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:1px;background:rgba(0,212,255,.1);color:var(--neon-cyan);border:1px solid rgba(0,212,255,.2)">RAG ON</div>
+    </div>
+  </div>
+
+  <!-- Technical Indicators -->
+  <div class="qpanel">
+    <div class="qpanel-hdr"><span>INDICADORES TECNICOS</span><span class="qtag info">22 IND</span></div>
+    <div class="qgrid qg-5" style="margin-bottom:8px">
+      <div class="qmetric"><div class="qlabel">RSI (14)</div><div class="qvalue smooth-value" id="ta-rsi">--</div><div class="qsub" id="ta-rsi-ctx">&nbsp;</div></div>
+      <div class="qmetric"><div class="qlabel">MACD HIST</div><div class="qvalue smooth-value" id="ta-macd">--</div><div class="qsub" id="ta-macd-ctx">&nbsp;</div></div>
+      <div class="qmetric"><div class="qlabel">BOLLINGER %</div><div class="qvalue smooth-value" id="ta-bb">--</div><div class="qsub" id="ta-bb-ctx">&nbsp;</div></div>
+      <div class="qmetric"><div class="qlabel">ATR %</div><div class="qvalue smooth-value" id="ta-atr">--</div><div class="qsub" id="ta-atr-ctx">&nbsp;</div></div>
+      <div class="qmetric"><div class="qlabel">PRESION</div><div class="qvalue smooth-value" id="ta-bp">--</div><div class="qsub" id="ta-bp-ctx">&nbsp;</div></div>
+    </div>
+    <div class="qgrid qg-4">
+      <div class="qmetric"><div class="qlabel">EMA 12</div><div class="qvalue smooth-value" id="ta-ema12">--</div></div>
+      <div class="qmetric"><div class="qlabel">EMA 26</div><div class="qvalue smooth-value" id="ta-ema26">--</div></div>
+      <div class="qmetric"><div class="qlabel">SOPORTE</div><div class="qvalue" id="ta-sup" style="color:var(--neon-green)">--</div></div>
+      <div class="qmetric"><div class="qlabel">RESISTENCIA</div><div class="qvalue" id="ta-res" style="color:var(--neon-red)">--</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 4: OBSERVER
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-observer" class="tab-pane">
+  <div class="qpanel">
+    <div class="qpanel-hdr">
+      <span>LIVE OBSERVER — Comentarista AI (15s)</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span id="pulse-dot" style="width:6px;height:6px;border-radius:50%;background:var(--t4)"></span>
+        <span id="pulse-age" style="font-size:9px;color:var(--t4)">--</span>
+      </div>
+    </div>
+    <div class="observer-console" id="observer-console">
+      <div class="observer-entry" style="color:var(--t4)">Iniciando observador... esperando primera ventana.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+// ── Fluid Timer UI (server end_time absoluto, render local 1Hz) ──
+let _globalServerEndTime = null;
+
+// escapeHtml() is now defined in base.html — available globally
+
+// ── Chart.js CDN ──
+(function(){const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';s.integrity='sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt';s.crossOrigin='anonymous';s.onload=()=>{initEquityChart()};document.head.appendChild(s)})();
+
+// ── Tab switching ──
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  $('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Equity chart ──
+let equityChart=null;
+function initEquityChart(){
+  const ctx=$('equity-chart');
+  if(!ctx||typeof Chart==='undefined')return;
+  equityChart=new Chart(ctx,{
+    type:'line',
+    data:{labels:[],datasets:[{data:[],borderColor:'var(--neon-cyan)',backgroundColor:'rgba(0,212,255,.05)',borderWidth:1.5,fill:true,pointRadius:0,tension:.3}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{enabled:true,mode:'index',intersect:false,
+        backgroundColor:'rgba(15,23,42,.95)',borderColor:'rgba(255,255,255,.08)',borderWidth:1,
+        titleColor:'#e2e8f0',bodyColor:'#94a3b8',titleFont:{family:'Space Grotesk'},
+        callbacks:{label:function(c){return '$'+c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2})}}}},
+      scales:{x:{display:false},y:{display:true,position:'right',grid:{color:'rgba(255,255,255,.03)',drawBorder:false},
+        ticks:{font:{size:9,family:'JetBrains Mono'},color:'#475569',callback:function(v){return '$'+v.toLocaleString()}}}}
+    }
+  });
+}
+
+function updateEquity(results,currentBalance){
+  if(!equityChart)return;
+  const sorted=[...results].reverse();
+  let bal=currentBalance;
+  const timeline=[currentBalance];
+  for(let i=sorted.length-1;i>=0;i--){
+    bal-=sorted[i].profit;
+    timeline.unshift(Math.round(bal*100)/100);
+  }
+  equityChart.data.labels=timeline.map((_,i)=>i);
+  equityChart.data.datasets[0].data=timeline;
+  const profitColor=currentBalance>=100;
+  equityChart.data.datasets[0].borderColor=profitColor?'#00ff88':'#ff3366';
+  equityChart.data.datasets[0].backgroundColor=profitColor?'rgba(0,255,136,.05)':'rgba(255,51,102,.05)';
+  equityChart.update('none');
+}
+
+// ── WebSocket ──
+let wsPrice=0,wsSource='',wsConnected=false,serverOpenPrice=0,lastState=null,manualBetSide='',manualBetOpen=false;
+
+function connectWS(){
+  try{
+    const ws=new WebSocket('wss://ws-live-data.polymarket.com');
+    ws.onopen=()=>{wsConnected=true;ws.send(JSON.stringify({action:'subscribe',subscriptions:[{topic:'crypto_prices_chainlink',type:'*',filters:'{"symbol":"btc/usd"}'}]}));ws.send(JSON.stringify({action:'subscribe',subscriptions:[{topic:'crypto_prices',type:'update',filters:'btcusdt'}]}));$('ws-status-text').textContent='WS: Live';$('ws-status-text').previousElementSibling.style.background='var(--neon-green)'};
+    ws.onmessage=(e)=>{try{const d=JSON.parse(e.data),pl=d.payload||{};let p=0,src='';if(d.topic==='crypto_prices_chainlink'&&pl.symbol==='btc/usd'&&d.type==='update'){p=parseFloat(pl.value||0);src='chainlink'}else if(d.topic==='crypto_prices'&&pl.symbol==='btcusdt'){p=parseFloat(pl.value||0);src='binance'}if(p>0){if(src==='chainlink'||(src==='binance'&&wsSource!=='chainlink')){wsPrice=p;wsSource=src}updateLivePrice()}}catch(err){}};
+    ws.onclose=()=>{wsConnected=false;$('ws-status-text').textContent='WS: Reconnecting...';$('ws-status-text').previousElementSibling.style.background='var(--y)';setTimeout(connectWS,3000)};
+    ws.onerror=()=>{ws.close()};
+  }catch(e){setTimeout(connectWS,5000)}
+}
+
+function updateLivePrice(){
+  if(wsPrice<=0)return;
+  $('ws-price').style.display='inline';$('ws-price-val').textContent=fm(wsPrice);$('cp').textContent='$'+fm(wsPrice);
+  if(serverOpenPrice>0){const d=wsPrice-serverOpenPrice,p=(d/serverOpenPrice)*100,up=d>=0;$('pa').textContent=up?'\u25B2':'\u25BC';$('pdi').textContent='$'+fm(Math.abs(d));$('ppc').textContent='('+(up?'+':'')+p.toFixed(4)+'%)';$('pcx').className='price-change '+(up?'up':'dn');updateBanner(d,p,up)}
+}
+
+function updateBanner(diff,pct,up){
+  const a=Math.abs(diff);
+  $('live-verdict').textContent=(up?'\u25B2 ARRIBA +$':'\u25BC ABAJO -$')+fm(a);$('live-verdict').style.color=up?'var(--neon-green)':'var(--neon-red)';
+  $('live-side-tag').textContent=up?'\u25B2 UP GANA':'\u25BC DOWN GANA';$('live-side-tag').style.color=up?'var(--neon-green)':'var(--neon-red)';
+  $('live-status').style.borderColor=up?'rgba(0,255,136,.2)':'rgba(255,51,102,.2)';
+  $('live-explain').textContent='Precio $'+fm(a)+' '+(up?'POR ENCIMA':'POR DEBAJO')+' de apertura';
+}
+connectWS();
+
+// ── Circuit Breaker resume ──
+async function resumePrimary(){
+  try{const r=await fetch('/api/resume_primary',{method:'POST'});const d=await r.json();if(d.ok){$('cb-overlay').classList.remove('active');$('primary-halted-banner').style.display='none';poll()}}catch(e){console.error('Resume error',e)}
+}
+
+// ── Manual bet ──
+function showBetPanel(side){
+  manualBetSide=side;manualBetOpen=true;$('manual-bet-panel').style.display='block';$('mb-error').style.display='none';
+  const isUp=side==='UP';$('mb-side-label').textContent=side;$('mb-side-label').style.color=isUp?'var(--neon-green)':'var(--neon-red)';
+  if(lastState){const odds=isUp?lastState.window.up_odds:lastState.window.down_odds;$('mb-odds-label').textContent=odds+'\u00A2';const sc=isUp?lastState.live_up_scenarios:lastState.live_down_scenarios;const el=$('mb-amounts');el.innerHTML='';['small','medium','large'].forEach(k=>{const s=sc[k]||{};const lbl=k==='small'?'Chica':k==='medium'?'Media':'Grande';el.innerHTML+='<div onclick="$(\'mb-custom\').value='+s.amount+'" style="cursor:pointer;background:var(--glass);backdrop-filter:var(--glass-blur);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--glass-border);transition:all .2s" onmouseover="this.style.borderColor=\'rgba(0,212,255,.3)\'" onmouseout="this.style.borderColor=\'var(--glass-border)\'"><div style="font-size:8px;color:var(--t4);letter-spacing:1px;margin-bottom:3px">'+lbl.toUpperCase()+'</div><div style="font-size:16px;font-weight:700;font-family:Space Grotesk,sans-serif;color:var(--t1)">$'+fm(s.amount||0)+'</div><div style="font-size:9px;color:var(--neon-green);margin-top:3px">+$'+fm(s.potential_gain||0)+'</div></div>';})}
+}
+
+async function placeBet(){
+  const amt=parseFloat($('mb-custom').value)||0;if(amt<=0){$('mb-error').textContent='Ingresa un monto';$('mb-error').style.display='block';return}
+  try{const r=await fetch('/api/manual_bet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({side:manualBetSide,amount:amt})});const d=await r.json();if(d.ok){manualBetOpen=false;$('manual-bet-panel').style.display='none';poll()}else{$('mb-error').textContent=d.error;$('mb-error').style.display='block'}}catch(e){$('mb-error').textContent='Error';$('mb-error').style.display='block'}
+}
+
+// ── ML Judge toggle ──
+async function toggleMlJudge(enabled){
+  try{const r=await fetch('/api/toggle_ml_judge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});const d=await r.json();if(d.ok)_syncMlBadge(d.enabled)}catch(e){console.error('ML Judge toggle error',e)}
+}
+function _syncMlBadge(on){
+  const badge=$('ml-judge-badge'),cb=$('ml-judge-toggle');cb.checked=on;
+  if(on){badge.textContent='ML ON';badge.className='qtag live'}
+  else{badge.textContent='ML OFF';badge.className='qtag info'}
+}
+
+// ── Live Mode Toggle ──
+let isPaperModeStore = true;
+async function toggleLiveMode() {
+  const willBePaper = !isPaperModeStore;
+  try {
+    const r = await fetch('/api/save_config', {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paper_mode: willBePaper })
+    });
+    const d = await r.json();
+    if(d.ok) {
+      _syncLiveBadge(d.paper_mode);
+      // Auto-sync: LIVE TRADING ON → activate live sizing / OFF → deactivate
+      const wantLive = !d.paper_mode;
+      try {
+        const r2 = await fetch('/api/toggle_live_dynamic_sizing', {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: wantLive })
+        });
+        const d2 = await r2.json();
+        if(d2.ok) { _syncSizingBadge(d2.enabled); }
+      } catch(e2) { console.error('Auto-sync sizing error', e2); }
+      poll();
+    }
+  } catch(e) { console.error('Paper mode toggle error', e); }
+}
+function _syncLiveBadge(isPaper) {
+  isPaperModeStore = !!isPaper;
+  const btn = $('master-live-btn');
+  if(!btn) return;
+  if(isPaperModeStore) {
+    btn.textContent = 'PAPER TRADING';
+    btn.className = 'paper-mode-btn';
+  } else {
+    btn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;background:var(--neon-green);border-radius:50%;margin-right:4px;box-shadow:0 0 6px var(--neon-green)"></span>LIVE TRADING';
+    btn.className = 'live-mode-btn';
+  }
+}
+
+// ── Live Sizing / Sync Paper Balance ──
+let _isLiveSizingOn = false;
+async function toggleLiveSizing() {
+  // In PAPER mode: sync simulated balance with real Polymarket balance
+  if(isPaperModeStore) {
+    const btn = $('live-sizing-btn');
+    if(btn) { btn.textContent = 'SINCRONIZANDO...'; btn.disabled = true; }
+    try {
+      const r = await fetch('/api/sync_paper_balance', {
+        method: "POST", headers: { "Content-Type": "application/json" }
+      });
+      const d = await r.json();
+      if(d.ok) {
+        if(btn) {
+          btn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;background:var(--neon-cyan);border-radius:50%;margin-right:4px;box-shadow:0 0 6px var(--neon-cyan)"></span>SYNC $' + d.synced_balance.toFixed(2);
+          btn.className = 'live-mode-btn';
+          btn.style.color = 'var(--neon-cyan)';
+          setTimeout(()=>{ _syncSizingBadge(false); }, 3000);
+        }
+        poll();
+      } else {
+        if(btn) { btn.textContent = 'ERROR: ' + (d.error||'?'); btn.className = 'paper-mode-btn'; }
+        setTimeout(()=>{ _syncSizingBadge(false); }, 3000);
+      }
+    } catch(e) {
+      console.error('Sync paper balance error', e);
+      if(btn) { btn.textContent = 'ERROR DE RED'; }
+      setTimeout(()=>{ _syncSizingBadge(false); }, 3000);
+    }
+    if(btn) btn.disabled = false;
+    return;
+  }
+  // In LIVE mode: toggle live sizing normally
+  try {
+    const r = await fetch('/api/toggle_live_dynamic_sizing', {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: !_isLiveSizingOn })
+    });
+    const d = await r.json();
+    if(d.ok) { _syncSizingBadge(d.enabled); poll(); }
+  } catch(e) { console.error('Live sizing toggle error', e); }
+}
+function _syncSizingBadge(isOn) {
+  _isLiveSizingOn = !!isOn;
+  const btn = $('live-sizing-btn');
+  if(!btn) return;
+  btn.style.color = '';
+  if(!isPaperModeStore && _isLiveSizingOn) {
+    // LIVE TRADING + LIVE SIZING ON
+    btn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;background:var(--neon-green);border-radius:50%;margin-right:4px;box-shadow:0 0 6px var(--neon-green)"></span>SALDO L2 REAL';
+    btn.className = 'live-mode-btn';
+  } else if(isPaperModeStore) {
+    // PAPER mode: button acts as sync trigger
+    btn.innerHTML = '&#x1F504; SYNC SALDO REAL';
+    btn.className = 'paper-mode-btn';
+  } else {
+    btn.textContent = 'SALDO SIMULADO';
+    btn.className = 'paper-mode-btn';
+  }
+}
+
+
+// ── Sparkline ──
+let _sparkCache='';
+function spark(cv,data,up){
+  if(!data||data.length<2)return;
+  const fp=data.length+'|'+data[0]+'|'+data[data.length-1]+'|'+(up?1:0);
+  if(fp===_sparkCache)return;
+  _sparkCache=fp;
+  const ctx=cv.getContext('2d'),w=cv.width=cv.offsetWidth*2,h=cv.height=100;
+  ctx.clearRect(0,0,w,h);
+  const mn=Math.min(...data),mx=Math.max(...data),rg=mx-mn||1,cl=up?'#00ff88':'#ff3366';
+  const gd=ctx.createLinearGradient(0,0,0,h);gd.addColorStop(0,up?'rgba(0,255,136,.12)':'rgba(255,51,102,.12)');gd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath();data.forEach((p,i)=>{const x=(i/(data.length-1))*w,y=h-((p-mn)/rg)*(h-8)-4;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=gd;ctx.fill();
+  ctx.beginPath();data.forEach((p,i)=>{const x=(i/(data.length-1))*w,y=h-((p-mn)/rg)*(h-8)-4;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.strokeStyle=cl;ctx.lineWidth=1.5;ctx.stroke();
+  const ly=h-((data[data.length-1]-mn)/rg)*(h-8)-4;ctx.beginPath();ctx.arc(w-2,ly,3,0,Math.PI*2);ctx.fillStyle=cl;ctx.fill();
+}
+
+// ── Observer console ──
+let _observerHistory=[];
+const _OBSERVER_MAX=50;
+let _lastObserverText='';
+function _appendObserver(text,age){
+  if(!text||text===_lastObserverText)return;
+  _lastObserverText=text;
+  const now=new Date();
+  const ts=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  _observerHistory.unshift({ts:ts,text:text});
+  if(_observerHistory.length>_OBSERVER_MAX)_observerHistory=_observerHistory.slice(0,_OBSERVER_MAX);
+  const console_el=$('observer-console');
+  console_el.textContent='';
+  _observerHistory.forEach(entry=>{
+    const div=document.createElement('div');div.className='observer-entry';
+    const tsSpan=document.createElement('span');tsSpan.className='observer-ts';tsSpan.textContent=entry.ts;
+    div.appendChild(tsSpan);div.appendChild(document.createTextNode(entry.text));console_el.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// POLLING + STATE UPDATE
+// ══════════════════════════════════════════════════════════
+async function poll(){try{const r=await fetch('/api/state');const s=await r.json();upd(s)}catch(e){}}
+
+function upd(s){
+  lastState=s;const w=s.window,p=s.portfolio,sig=s.signal,bet=s.bet,f=s.feed,ta=s.ta||{},acc=s.accuracy||{};
+  const up=w.price_diff>=0;serverOpenPrice=w.open_price;
+  // ── Fluid Timer sync: capturar end_time absoluto del servidor (render local 1Hz aparte) ──
+  if(w&&w.end_time){_globalServerEndTime=w.end_time;}
+  $('naw').style.display=s.has_api_key?'none':'block';
+  _syncMlBadge(!!s.ml_judge_enabled);
+  if(isPaperModeStore !== !!s.paper_mode) { _syncLiveBadge(!!s.paper_mode); }
+  if(_isLiveSizingOn !== !!s.live_sizing_enabled) { _syncSizingBadge(!!s.live_sizing_enabled); }
+  $('st').textContent=s.server_time;
+
+  // ═══ CIRCUIT BREAKER (Primary AI Halted) ═══
+  if(s.primary_halted){
+    $('primary-halted-banner').style.display='block';
+    $('primary-halted-reason').textContent=s.primary_halt_reason||'Error desconocido';
+    $('cb-overlay').classList.add('active');
+    $('cb-overlay-reason').textContent=s.primary_halt_reason||'Error desconocido';
+  }else{
+    $('primary-halted-banner').style.display='none';
+    $('cb-overlay').classList.remove('active');
+  }
+
+  // ── Feed status ──
+  if(f.connected){
+    const src=f.source.includes('chainlink')?'Chainlink':'Binance';
+    $('feed-status-text').textContent=src+' '+f.last_update_age+'s';
+    $('feed-status-text').previousElementSibling.style.background='var(--neon-green)';
+    $('price-source').textContent=f.source.toUpperCase();
+  }
+  if(!wsConnected){
+    $('cp').textContent='$'+fm(w.current_price);
+    $('pa').textContent=up?'\u25B2':'\u25BC';
+    $('pdi').textContent='$'+fm(Math.abs(w.price_diff));
+    $('ppc').textContent='('+(up?'+':'')+w.price_pct.toFixed(4)+'%)';
+    $('pcx').className='price-change '+(up?'up':'dn');
+    updateBanner(w.price_diff,w.price_pct,up);
+  }
+  $('pvs').textContent='vs apertura $'+fm(w.open_price);
+
+  // ── Sticky Header Update ──
+  if($('stk-wid')) {
+    $('stk-wid').textContent = w.id || '--';
+    $('stk-cp').textContent = '$'+fm(w.current_price);
+    $('stk-pa').textContent = up ? '\u25B2' : '\u25BC';
+    $('stk-pa').style.color = up ? 'var(--neon-green)' : 'var(--neon-red)';
+    const pb = s.portfolio ? s.portfolio.balance : 0;
+    $('stk-bal').textContent='$' + fm(pb);
+  }
+
+  // ── Bet status tag ──
+  const bstat=s.bet_status||'no_signal';
+  const bsTag=$('bet-status-tag');
+  if(bstat==='placed'){bsTag.textContent='PLACED';bsTag.className='qtag live'}
+  else if(bstat==='observing'){bsTag.textContent='OBSERVING';bsTag.className='qtag info'}
+  else if(bstat==='deciding'){bsTag.textContent='DECIDING';bsTag.className='qtag warn'}
+  else if(bstat==='skipped'){bsTag.textContent='SKIPPED';bsTag.className='qtag danger'}
+  else if(bstat.startsWith('sniping')){bsTag.textContent='SNIPING';bsTag.className='qtag warn'}
+  else{bsTag.textContent='WAITING';bsTag.className='qtag info'}
+
+  // ── Live rec ──
+  const lrec=$('live-rec');
+  if(sig){
+    const wside=w.winning_side||'UP',hasBet=!!bet;
+    if(hasBet&&sig.prediction===wside){lrec.textContent='AI aposto '+sig.prediction+' ('+sig.confidence+'%) \u2014 confirma \u2705';lrec.style.color=sig.prediction==='UP'?'var(--neon-green)':'var(--neon-red)'}
+    else if(hasBet&&sig.prediction!==wside){lrec.textContent='AI aposto '+sig.prediction+' pero precio va '+wside+' \u274C';lrec.style.color='var(--y)'}
+    else if(bstat==='observing'){lrec.textContent='\u{1F50D} '+sig.prediction+' '+sig.confidence+'% \u2014 buscando senal...';lrec.style.color='var(--neon-cyan)'}
+    else if(bstat==='deciding'){lrec.textContent='\u26A1 Decidiendo... '+sig.prediction+' '+sig.confidence+'%';lrec.style.color='var(--y)'}
+    else if(bstat==='skipped'){lrec.textContent='AI no aposto esta ventana';lrec.style.color='var(--t3)'}
+    else{lrec.textContent='AI predice '+sig.prediction+' ('+sig.confidence+'%)';lrec.style.color='var(--t3)'}
+  }else{lrec.textContent='AI analizando...';lrec.style.color='var(--t4)'}
+
+  // ── Momentum arrow ──
+  const mom=ta.momentum||0,ma=$('mom-arrow');
+  if(mom>0.05){ma.textContent='\u25B2\u25B2';ma.className='mom-arrow strong-up'}
+  else if(mom>0.01){ma.textContent='\u25B2';ma.className='mom-arrow up'}
+  else if(mom<-0.05){ma.textContent='\u25BC\u25BC';ma.className='mom-arrow strong-down'}
+  else if(mom<-0.01){ma.textContent='\u25BC';ma.className='mom-arrow down'}
+  else{ma.textContent='\u2014';ma.className='mom-arrow neutral'}
+
+  // ── Timer render movido a setInterval local 1Hz (Fluid Timer UI) ──
+  $('wid').textContent='Ventana #'+w.id;
+  $('window-tag').textContent=w.is_active?'LIVE':'WAIT';
+  $('window-tag').className='qtag '+(w.is_active?'live':'info');
+  $('opr').textContent='$'+fm(w.open_price);
+  $('dir').textContent=up?'\u2191 +$'+fm(Math.abs(w.price_diff))+' arriba':'\u2193 -$'+fm(Math.abs(w.price_diff))+' abajo';
+  $('dir').style.color=up?'var(--neon-green)':'var(--neon-red)';
+
+  // ── Odds ──
+  $('uo').textContent=w.up_odds+'\u00A2';$('do').textContent=w.down_odds+'\u00A2';
+  $('uo-gain').textContent='$100\u2192+$'+fm(100*((100/Math.max(5,w.up_odds))-1));
+  $('do-gain').textContent='$100\u2192+$'+fm(100*((100/Math.max(5,w.down_odds))-1));
+
+  // ═══ TECHNICAL INDICATORS ═══
+  if(ta.rsi!==undefined){
+    $('ta-rsi').textContent=ta.rsi;$('ta-rsi').style.color=ta.rsi>70?'var(--neon-red)':ta.rsi<30?'var(--neon-green)':'var(--t1)';$('ta-rsi-ctx').textContent=ta.rsi>70?'Sobrecompra':ta.rsi<30?'Sobreventa':'Neutral';
+    const mh=ta.macd_histogram||0;$('ta-macd').textContent=(mh>=0?'+':'')+mh.toFixed(2);$('ta-macd').style.color=mh>0?'var(--neon-green)':'var(--neon-red)';$('ta-macd-ctx').textContent=mh>0?'Alcista':'Bajista';
+    const bb=ta.bb_pct||50;$('ta-bb').textContent=bb.toFixed(0)+'%';$('ta-bb').style.color=bb>80?'var(--neon-red)':bb<20?'var(--neon-green)':'var(--t1)';$('ta-bb-ctx').textContent=bb>80?'Upper band':bb<20?'Lower band':'Centro';
+    const atr2=ta.atr_pct||0;$('ta-atr').textContent=atr2.toFixed(3)+'%';$('ta-atr').style.color=atr2>0.05?'var(--y)':'var(--t1)';$('ta-atr-ctx').textContent=atr2>0.05?'Alta vol':'Normal';
+    const bp=ta.tick_buy_pressure||50;$('ta-bp').textContent=bp+'%';$('ta-bp').style.color=bp>60?'var(--neon-green)':bp<40?'var(--neon-red)':'var(--t1)';$('ta-bp-ctx').textContent=bp>60?'Compradores':bp<40?'Vendedores':'Equilibrio';
+    $('ta-ema12').textContent='$'+fm(ta.ema12||0);$('ta-ema26').textContent='$'+fm(ta.ema26||0);
+    $('ta-ema12').style.color=(ta.ema12||0)>(ta.ema26||0)?'var(--neon-green)':'var(--neon-red)';
+    $('ta-ema26').style.color=(ta.ema12||0)>(ta.ema26||0)?'var(--neon-red)':'var(--neon-green)';
+    $('ta-sup').textContent='$'+fm(ta.support||0);$('ta-res').textContent='$'+fm(ta.resistance||0);
+  }
+
+  // ═══ AI SIGNAL ═══
+  if(sig){
+    $('sbb').textContent=(sig.prediction==='UP'?'\u25B2 ':'\u25BC ')+sig.prediction;$('sbb').className='sb '+(sig.prediction==='UP'?'up':'dn');
+    $('rbb').textContent=sig.risk_score;$('rbb').className='rb '+sig.risk_score;
+    const cn=sig.confidence,cc=cn>65?'var(--neon-green)':cn>45?'var(--y)':'var(--neon-red)';
+    $('cf').style.width=cn+'%';$('cf').style.background=cc;$('cv').textContent=cn+'%';$('cv').style.color=cc;
+    $('rsn').textContent=sig.reasoning;
+    $('ns').textContent=sig.news_summary;$('ns').style.display=sig.news_summary?'block':'none';
+    $('sigc').style.opacity='1';
+    const abb=$('ai-bet-banner');abb.style.display='block';
+    const isUp2=sig.prediction==='UP';
+    abb.style.background=isUp2?'rgba(0,255,136,.06)':'rgba(255,51,102,.06)';
+    abb.style.border='1px solid '+(isUp2?'rgba(0,255,136,.2)':'rgba(255,51,102,.2)');
+    if(bet&&bet.is_auto){$('ai-bet-label').textContent='AI APOSTO'}
+    else if(bstat==='observing'){$('ai-bet-label').textContent='AI PREDICE \u2014 observando...'}
+    else if(bstat==='deciding'){$('ai-bet-label').textContent='AI DECIDIENDO...'}
+    else if(bstat==='skipped'){$('ai-bet-label').textContent='AI PREDICE (sin apuesta)'}
+    else{$('ai-bet-label').textContent='AI PREDICE'}
+    $('ai-bet-label').style.color=isUp2?'var(--neon-green)':'var(--neon-red)';
+    $('ai-bet-dir').textContent=isUp2?'\u25B2 SUBE':'\u25BC BAJA';
+    $('ai-bet-dir').style.color=isUp2?'var(--neon-green)':'var(--neon-red)';
+    if(sig.update_count>0){
+      $('mid-badge').style.display='inline';$('mid-badge').textContent='x'+sig.update_count+' upd';
+      if(sig.original_confidence!==sig.confidence){$('cv-orig').style.display='inline';$('cv-orig-val').textContent=sig.original_confidence+'%'}
+      else{$('cv-orig').style.display='none'}
+    }else{$('mid-badge').style.display='none';$('cv-orig').style.display='none'}
+    // Layer Alignment
+    const laRow=$('layer-alignment-row'),laBadge=$('layer-alignment-badge'),laDetail=$('layer-alignment-detail');
+    if(sig.layer_alignment){
+      laRow.style.display='flex';
+      const laMatch=sig.layer_alignment.match(/(\d+)\/(\d+)/);
+      if(laMatch){const num=parseInt(laMatch[1]),den=parseInt(laMatch[2]);
+        if(num===den){laBadge.textContent=num+'/'+den+' \u2713';laBadge.style.background='rgba(0,255,136,.12)';laBadge.style.color='var(--neon-green)'}
+        else if(num>=2){laBadge.textContent=num+'/'+den+' \u26A0';laBadge.style.background='rgba(245,158,11,.12)';laBadge.style.color='var(--y)'}
+        else{laBadge.textContent=num+'/'+den+' \u2717';laBadge.style.background='rgba(255,51,102,.12)';laBadge.style.color='var(--neon-red)'}
+      }else{laBadge.textContent=sig.layer_alignment;laBadge.style.background='rgba(0,212,255,.1)';laBadge.style.color='var(--neon-cyan)'}
+      const detailPart=sig.layer_alignment.split('->')[0]||'';laDetail.textContent=detailPart.trim();
+    }else{laRow.style.display='none'}
+  }else{
+    $('sbb').textContent='...';$('sbb').className='sb';$('rbb').textContent='';
+    $('cf').style.width='0%';$('cv').textContent='--';$('cv').style.color='var(--t3)';
+    $('rsn').textContent=w.is_active?'Analizando mercado...':'Esperando nueva ventana...';
+    $('ns').style.display='none';$('mid-badge').style.display='none';$('cv-orig').style.display='none';
+    $('sigc').style.opacity='0.6';$('ai-bet-banner').style.display='none';
+    $('layer-alignment-row').style.display='none';
+  }
+
+  // ═══ ML ORACLE ═══
+  const orc=s.ml_oracle||{};
+  const orcRow=$('oracle-row');const orcBanner=$('oracle-banner');
+  if(orc.enabled&&orc.prob!==null&&orc.prob!==undefined){
+    const pct=Math.round(orc.prob*100);
+    const oc=pct>=55?'var(--neon-green)':pct>=45?'var(--y)':'var(--neon-red)';
+    orcRow.style.display='flex';
+    $('oracle-bar').style.width=pct+'%';$('oracle-bar').style.background=oc;
+    $('oracle-pct').textContent=pct+'%';$('oracle-pct').style.color=oc;
+    if(orc.ml_skipped){
+      orcBanner.style.display='block';orcBanner.textContent='\uD83D\uDEE1\uFE0F ORACLE REJECTED \u2014 Capital Protegido ('+pct+'% < '+(orc.threshold*100)+'%)';
+      orcBanner.style.background='rgba(245,158,11,.08)';orcBanner.style.color='#f59e0b';orcBanner.style.border='1px solid rgba(245,158,11,.2)';
+    }else{
+      orcBanner.style.display='block';orcBanner.textContent='\u2705 ORACLE APPROVED ('+pct+'%)';
+      orcBanner.style.background='rgba(0,255,136,.04)';orcBanner.style.color='var(--neon-green)';orcBanner.style.border='1px solid rgba(0,255,136,.15)';
+    }
+  }else{orcRow.style.display='none';orcBanner.style.display='none'}
+
+  // ═══ BET ═══
+  if(bet){
+    $('bc').style.display='block';$('nbc').style.display='none';if(!manualBetOpen)$('manual-bet-panel').style.display='none';
+    $('bet-type-label').textContent=bet.is_auto?'APUESTA AI AUTO':'APUESTA MANUAL';
+    $('bet-type-label').style.color=bet.is_auto?'var(--neon-cyan)':'var(--b2)';
+    $('bsb').textContent=bet.side;$('bsb').className='sb '+(bet.side==='UP'?'up':'dn');
+    $('ba').textContent='$'+fm(bet.amount);$('bp').textContent=bet.price_cents+'\u00A2';
+    $('bpy').textContent='$'+fm(bet.potential_payout);
+    const lp=bet.live_profit||0;
+    $('b-live-pnl').textContent=(lp>=0?'+':'')+' $'+fm(lp);
+    $('b-live-pnl').style.color=lp>=0?'var(--neon-green)':'var(--neon-red)';
+    const bls=$('b-live-status');
+    if(bet.would_win){bls.textContent='\u2705 GANANDO \u2014 cobras $'+fm(bet.potential_payout);bls.style.background='rgba(0,255,136,.06)';bls.style.color='var(--neon-green)'}
+    else{bls.textContent='\u274C PERDIENDO \u2014 necesita ir '+(bet.side==='UP'?'ARRIBA':'ABAJO');bls.style.background='rgba(255,51,102,.06)';bls.style.color='var(--neon-red)'}
+  }else{
+    $('bc').style.display='none';
+    if(!w.is_active){$('nbc').style.display='block';$('nbr').textContent='Esperando nueva ventana...'}
+    else if(!sig){$('nbc').style.display='block';$('nbr').textContent='AI analizando mercado...'}
+    else if(bstat==='observing'){const tl=w.time_left||0;$('nbc').style.display='block';$('nbr').textContent='\u23F3 Observando ('+sig.prediction+' '+sig.confidence+'%)... decide en ~'+Math.ceil(Math.max(0,tl-120)/60)+'min'}
+    else if(bstat==='deciding'){$('nbc').style.display='block';$('nbr').textContent='\u26A1 Evaluando mercado...'}
+    else if(bstat==='skipped'){$('nbc').style.display='block';$('nbr').textContent='AI no aposto \u2014 puedes apostar manualmente'}
+    else{$('nbc').style.display='none'}
+  }
+
+  // ═══ STREAK + ACCURACY ═══
+  if(s.results&&s.results.length>0){
+    // Dashboard panel: show only REAL bets streak dots
+    const realOnly=s.results.filter(r=>!r.is_ghost);
+    let dh='';realOnly.slice(0,12).reverse().forEach(r=>{dh+='<span class="streak-dot '+(r.won?'w':'l')+'"></span>'});
+    $('streak-dots').innerHTML=dh;
+    // Global header streak bars (REAL + GHOST separated)
+    if(typeof _renderHeaderStreaks==='undefined'){
+      // Define it here since dashboard doesn't load the base pollSticky script
+      window._renderHeaderStreaks=function(results){
+        if(!results||!results.length) return;
+        const real=results.filter(r=>!r.is_ghost).slice(0,20);
+        const ghost=results.filter(r=>r.is_ghost).slice(0,15);
+        const realEl=document.getElementById('stk-streak-real');
+        const ghostEl=document.getElementById('stk-streak-ghost');
+        const wrEl=document.getElementById('stk-streak-wr');
+        const gwrEl=document.getElementById('stk-streak-gwr');
+        if(realEl){let h='';real.slice().reverse().forEach(r=>{h+='<span class="hdr-streak-dot '+(r.won?'w':'l')+'"></span>'});realEl.innerHTML=h}
+        if(ghostEl){let h='';ghost.slice().reverse().forEach(r=>{h+='<span class="hdr-streak-dot ghost '+(r.won?'w':'l')+'"></span>'});ghostEl.innerHTML=h}
+        if(wrEl&&real.length>0){const w2=real.filter(r=>r.won).length;const p2=Math.round(w2/real.length*100);wrEl.textContent=w2+'/'+real.length+' ('+p2+'%)';wrEl.style.color=p2>=55?'var(--neon-green)':p2>=45?'var(--y)':'var(--neon-red)'}
+        if(gwrEl&&ghost.length>0){const gw=ghost.filter(r=>r.won).length;const gp=Math.round(gw/ghost.length*100);gwrEl.textContent=gw+'/'+ghost.length+' ('+gp+'%)';gwrEl.style.color=gp>=55?'rgba(0,255,136,.5)':gp>=45?'var(--t4)':'rgba(255,51,102,.5)'}
+      };
+    }
+    _renderHeaderStreaks(s.results);
+  }
+  if(acc.total>0){
+    $('ai-acc').textContent=acc.correct+'/'+acc.total+' ('+acc.pct+'%)';
+    $('ai-acc').style.color=acc.pct>=55?'var(--neon-green)':acc.pct>=45?'var(--y)':'var(--neon-red)';
+  }
+
+  // Trust
+  const tr=s.trust||{};
+  if(tr.trust_score!==undefined){
+    $('trust-score').textContent=tr.trust_score.toFixed(0);
+    $('trust-score').style.color=tr.trust_score>=65?'var(--neon-green)':tr.trust_score>=40?'var(--y)':'var(--neon-red)';
+    $('trust-mult').textContent='x'+tr.bet_multiplier.toFixed(1);
+  }
+
+  // Circuit Breaker (news-based) — paper mode shows warning, real mode shows block
+  const cb=s.circuit_breaker||{};
+  const cbEl=$('cb-indicator');
+  if(cb.active){
+    cbEl.style.display='inline';
+    const isPaper=!!(s.paper_mode);
+    cbEl.title=cb.reason+' ('+Math.ceil(cb.remaining_seconds/60)+'min restantes)';
+    cbEl.innerHTML=isPaper
+      ?'<span class="qtag warn" style="animation:pulse-offline 1.5s infinite">&#9888; HIGH VOLATILITY</span>'
+      :'<span class="qtag danger" style="animation:pulse-offline 1s infinite">CIRCUIT BREAKER</span>';
+  }else{cbEl.style.display='none'}
+
+  // ═══ PORTFOLIO ═══
+  $('bal').textContent='$'+fm(p.balance);$('bal').style.color=p.balance>=100?'var(--neon-green)':'var(--t1)';
+  $('pnl').textContent=(p.total_profit>=0?'+':'')+' $'+fm(p.total_profit);$('pnl').style.color=p.total_profit>=0?'var(--neon-green)':'var(--neon-red)';
+  $('wr').textContent=p.win_rate+'%';$('wr').style.color=p.win_rate>=50?'var(--neon-green)':'var(--y)';
+  $('total-bets').textContent=p.total_bets;
+  $('dd').textContent=p.max_drawdown.toFixed(1)+'%';
+  $('pf-tag').textContent=p.total_bets>0?p.total_bets+' BETS':'SIM';
+
+  // Sparkline
+  if(s.price_history&&s.price_history.length>1)spark($('spark'),s.price_history,up);
+
+  // Equity curve
+  if(s.results&&s.results.length>0){updateEquity(s.results,p.balance)}
+
+  // Sentiment
+  _updateSentiment(s);
+
+  // RAG
+  _updateRAG(s);
+
+  // Sniper radar
+  _updateSniperRadar(s);
+
+  // Swarm Arena
+  _updateSwarmGrid(s.swarm||{},s);
+  _updateSwarmSummary();
+  _updateSwarmVotes(s.swarm||{});
+
+  // Observer
+  _updateLivePulse(s);
+}
+
+// ── Sentiment ──
+function _updateSentiment(s){
+  const sent=s.sentiment;if(!sent)return;
+  const fg=sent.fear_greed||{};
+  if(fg.value){
+    $('fg-value').textContent=fg.value;$('fg-label').textContent=fg.label||'--';
+    const v=fg.value;
+    if(v<=25){$('fg-value').style.color='var(--neon-red)';$('fg-tag').textContent='PANICO';$('fg-tag').className='qtag danger'}
+    else if(v<=45){$('fg-value').style.color='var(--y)';$('fg-tag').textContent='MIEDO';$('fg-tag').className='qtag warn'}
+    else if(v<=55){$('fg-value').style.color='var(--t2)';$('fg-tag').textContent='NEUTRAL';$('fg-tag').className='qtag info'}
+    else if(v<=75){$('fg-value').style.color='var(--neon-green)';$('fg-tag').textContent='AVARICIA';$('fg-tag').className='qtag live'}
+    else{$('fg-value').style.color='var(--neon-green)';$('fg-tag').textContent='EXTREMO';$('fg-tag').className='qtag live'}
+  }
+  const hl=sent.headlines||[];const box=$('headlines-list');
+  if(hl.length>0){box.textContent='';hl.forEach(function(t){const d=document.createElement('div');d.textContent='\u2022 '+t;d.style.marginBottom='2px';box.appendChild(d)})}
+  else{box.textContent='Sin titulares disponibles'}
+}
+
+// ── RAG Strategy ──
+function _updateRAG(s){
+  const rag=s.rag||{};const name=rag.active_strategy||null;const count=rag.strategies_count||0;
+  const blacklisted=rag.blacklisted||[];const losses=rag.strategy_losses||{};
+  $('rag-count-tag').textContent=count+' estrategia'+(count!==1?'s':'');
+  if(name){$('rag-active-name').textContent=name;$('rag-active-name').style.color='var(--neon-cyan)';$('rag-badge').style.display='inline-block'}
+  else{$('rag-active-name').textContent='Instinto Base (Sin RAG)';$('rag-active-name').style.color='var(--t3)';$('rag-badge').style.display='none'}
+  // Show blacklist/fatigue info
+  const blInfo=$('rag-blacklist-info');
+  if(blacklisted.length>0){blInfo.style.display='block';blInfo.textContent='\u26A0 Blacklisted: '+blacklisted.join(', ')}
+  else if(name&&losses[name]){blInfo.style.display='block';blInfo.textContent='Perdidas consecutivas: '+losses[name]+'/7'}
+  else{blInfo.style.display='none'}
+}
+
+
+// ── Sniper Radar ──
+let _sniperFp='';
+function _updateSniperRadar(s){
+  const sniper=s.sniper||{};const evals=sniper.evaluations||[];const betPlaced=sniper.bet_placed||false;
+  const isGhost=sniper.is_ghost_trade||false;const ghostReason=sniper.ghost_reason||'';
+  const bstat=s.bet_status||'no_signal';const wActive=s.window&&s.window.is_active;const hasSig=!!s.signal;
+  const cScore=sniper.consensus_score;const cDir=sniper.consensus_direction;
+  const cScoreFire=sniper.score_fire||2;const lastTrig=sniper.last_trigger_type||'';
+  const panel=$('sniper-radar');const timeline=$('sniper-timeline');const alertEl=$('sniper-alert');const sTag=$('sniper-tag');
+  const isSniping=bstat.startsWith('sniping');const isObserving=bstat==='observing';
+  const showRadar=wActive&&(evals.length>0||isSniping||isObserving||betPlaced||hasSig);
+  if(!showRadar){panel.style.display='none';_sniperFp='';return}
+  panel.style.display='block';
+  const _so=sniper.second_opinion||{};
+  const fp=evals.length+':'+evals.map(e=>e.minute+e.prediction+e.confidence).join(',')+':'+betPlaced+':'+isGhost+':'+bstat+':'+cScore+':'+cDir+':'+lastTrig+':'+(_so.source||'')+':'+(_so.confidence||'')+':'+(_so.veto?1:0)+':'+(_so.in_flight?1:0);
+  if(fp===_sniperFp)return;_sniperFp=fp;
+  if(betPlaced&&isGhost){sTag.textContent='GHOST';sTag.className='qtag warn'}
+  else if(betPlaced){
+    const trigLabel=lastTrig==='EARLY-FLASH'?'EARLY':lastTrig==='FLASH-FIRE'?'FLASH':lastTrig==='RESCUE'?'RESCUE':lastTrig==='OVERRIDE'?'OVERRIDE':'TRIGGERED';
+    sTag.textContent=trigLabel;sTag.className='qtag live'
+  }
+  else if(bstat==='skipped'){sTag.textContent='TIME-STOP';sTag.className='qtag danger'}
+  else if(isSniping||isObserving){
+    const scoreLbl=(cScore!==undefined&&cScore!==null&&cDir)?` ${cDir} ${cScore}/${cScoreFire}`:'';
+    sTag.textContent='SCANNING'+scoreLbl;sTag.className='qtag warn sniper-scanning'
+  }
+  else{sTag.textContent='STANDBY';sTag.className='qtag info'}
+  // Prefer backend-computed consensus_idx; fall back to legacy JS scan for older engines.
+  let consensusIdx=(sniper.consensus_idx!==undefined&&sniper.consensus_idx!==null)?sniper.consensus_idx:-1;
+  if(consensusIdx<0){
+    for(let i=1;i<evals.length;i++){if(evals[i].prediction===evals[i-1].prediction&&evals[i].confidence>=evals[i-1].confidence)consensusIdx=i}
+  }
+  timeline.innerHTML='';
+  if(evals.length===0&&!betPlaced){
+    const ph=document.createElement('div');ph.className='sniper-eval sniper-scanning';ph.style.cssText='border-style:dashed;flex:1;min-width:200px;opacity:.7';
+    ph.innerHTML='<div class="se-min">INICIALIZANDO</div><div class="se-dir" style="color:var(--t3);font-size:11px">\uD83D\uDD2C</div><div class="se-conf" style="color:var(--t4)">Analizando micro-estructura...</div>';
+    timeline.appendChild(ph);return;
+  }
+  evals.forEach((ev,i)=>{
+    const isUp=ev.prediction==='UP';const isCons=betPlaced&&i===consensusIdx;
+    const card=document.createElement('div');card.className='sniper-eval '+(isUp?'up':'dn')+(isCons?' consensus':'');
+    card.innerHTML='<div class="se-min">MIN '+(ev.minute!==undefined?ev.minute:'?')+'</div><div class="se-dir" style="color:'+(isUp?'var(--neon-green)':'var(--neon-red)')+'">'+(isUp?'\u25B2':'\u25BC')+' '+ev.prediction+'</div><div class="se-conf">'+ev.confidence+'%</div>';
+    if(isCons){card.innerHTML+='<div style="font-size:8px;color:var(--neon-cyan);margin-top:4px;font-weight:600;letter-spacing:1px">\u26A1 CONSENSO</div>'}
+    if(i<evals.length-1){card.innerHTML+='<span class="se-arrow">\u25B6</span>'}
+    timeline.appendChild(card);
+  });
+  if(isSniping&&!betPlaced){
+    const wc=document.createElement('div');wc.className='sniper-eval sniper-scanning';wc.style.borderStyle='dashed';
+    wc.innerHTML='<div class="se-min">PROX EVAL</div><div class="se-dir" style="color:var(--t3);font-size:12px">\u23F3</div><div class="se-conf" style="color:var(--t4)">esperando...</div>';
+    timeline.appendChild(wc);
+  }
+  const trigMap={'EARLY-FLASH':'\u26A1 Early Flash','FLASH-FIRE':'\u26A1 Flash Fire','RESCUE':'\u26E1 Rescue','OVERRIDE':'\uD83D\uDD04 Meta-Swarm','CONSENSUS':'\u26A1 Consenso'};
+  const trigText=trigMap[lastTrig]||'\u26A1 Consenso';
+  // ── Second Opinion badge suffix ──
+  const so=sniper.second_opinion||{};
+  let soSuffix='';
+  if(so.in_flight){soSuffix=' \u00B7 2nd-op \u23F3';}
+  else if(so.source){
+    if(so.veto){soSuffix=' \u00B7 2nd['+so.source+'] \u26D4 VETO';}
+    else if(so.direction){soSuffix=' \u00B7 2nd['+so.source+'] '+so.direction+' '+(so.confidence||'?')+'%';}
+  }
+  if(betPlaced&&isGhost&&consensusIdx>=0){
+    alertEl.style.display='block';alertEl.style.background='rgba(245,158,11,.06)';alertEl.style.border='1px solid rgba(245,158,11,.3)';alertEl.style.color='var(--y)';
+    alertEl.textContent='\u26A0\uFE0F '+trigText+': '+evals[consensusIdx].prediction+' '+evals[consensusIdx].confidence+'% \u2014 Bloqueada por Riesgo (Ghost)'+soSuffix;
+  }else if(betPlaced&&consensusIdx>=0){
+    alertEl.style.display='block';alertEl.style.background='rgba(0,212,255,.06)';alertEl.style.border='1px solid rgba(0,212,255,.2)';alertEl.style.color='var(--neon-cyan)';
+    alertEl.textContent=trigText+': '+evals[consensusIdx].prediction+' '+evals[consensusIdx].confidence+'% \u2014 Orden Ejecutada'+soSuffix;
+  }else if(bstat==='skipped'&&evals.length>0){
+    alertEl.style.display='block';alertEl.style.background='rgba(255,51,102,.04)';alertEl.style.border='1px solid rgba(255,51,102,.2)';alertEl.style.color='var(--neon-red)';
+    alertEl.textContent='\u26D4 Skipped: Sin Consenso ('+evals.length+' evals, score '+(cScore||0)+'/'+cScoreFire+')'+soSuffix;
+  }else if(soSuffix){
+    alertEl.style.display='block';alertEl.style.background='rgba(138,79,255,.05)';alertEl.style.border='1px solid rgba(138,79,255,.2)';alertEl.style.color='var(--neon-purple,#b388ff)';
+    alertEl.textContent='\uD83E\uDDE0 Segunda opinion'+soSuffix;
+  }else{alertEl.style.display='none'}
+}
+
+// ══════════════════════════════════════════════════════════
+// SWARM ARENA — Agent Cards
+// ══════════════════════════════════════════════════════════
+let _swarmFp='';
+let _agentsCache=null;
+async function fetchAgents(){try{const r=await fetch('/api/agents');_agentsCache=await r.json()}catch(e){}}
+
+function _updateSwarmGrid(swarmState,fullState){
+  if(!_agentsCache||!_agentsCache.length){$('swarm-arena').style.display='none';return}
+  // Filter out primary agent (has its own dedicated panel)
+  let allAgents=_agentsCache.filter(a=>a.enabled&&!a.is_primary);
+
+  if(allAgents.length===0){$('swarm-arena').style.display='none';return}
+  $('swarm-arena').style.display='block';
+  $('swarm-count-tag').textContent=allAgents.length+' AGENTE'+(allAgents.length>1?'S':'');
+
+  // Adjust grid columns
+  const grid=$('swarm-grid');
+  if(allAgents.length<=2)grid.className='qgrid qg-2';
+  else if(allAgents.length<=3)grid.className='qgrid qg-3';
+  else grid.className='qgrid qg-4';
+
+  const fp=allAgents.map(a=>{
+    const sig=swarmState[a.agent_id]||a.last_signal||null;const p=a.portfolio||{};
+    return a.agent_id+':'+(a.enabled?1:0)+':'+(sig?sig.prediction+sig.confidence:'-')+':'+p.balance;
+  }).join(',');
+  if(fp===_swarmFp)return;_swarmFp=fp;
+
+  grid.innerHTML='';
+  const stratNames={'smc_liquidity':'SMC / Liquidez','mean_reversion_divergence':'Rev. Media / Divergencias','momentum_breakout':'Momentum / Breakouts','mean_reversion':'Rev. Media'};
+
+  allAgents.forEach(a=>{
+    const sig=swarmState[a.agent_id]||a.last_signal||null;
+    const port=a.portfolio||{};
+    const card=document.createElement('div');
+    const hasSig=sig&&sig.prediction;
+    const isUp=hasSig&&sig.prediction==='UP';
+
+    if(hasSig)card.className='agent-card '+(isUp?'active-up':'active-dn');
+    else card.className='agent-card offline';
+
+    // Name row
+    const nameRow=document.createElement('div');nameRow.className='ac-name';
+    const nameSpan=document.createElement('span');nameSpan.textContent=a.display_name||a.agent_id;
+    nameSpan.style.color=a.is_primary?'var(--neon-cyan)':'var(--t1)';nameRow.appendChild(nameSpan);
+    const statusDot=document.createElement('span');
+    statusDot.style.cssText='width:7px;height:7px;border-radius:50%;display:inline-block;transition:background .3s;background:'+(hasSig?'var(--neon-green)':'var(--t4)');
+    if(hasSig)statusDot.style.boxShadow='0 0 6px rgba(0,255,136,.5)';
+    nameRow.appendChild(statusDot);card.appendChild(nameRow);
+
+    // Strategy
+    const strat=document.createElement('div');strat.className='ac-strategy';strat.textContent=stratNames[a.strategy]||a.strategy||'--';card.appendChild(strat);
+
+    if(!hasSig){
+      const offLabel=document.createElement('div');offLabel.className='ac-offline-label';offLabel.textContent='NO SIGNAL';card.appendChild(offLabel);
+    }else{
+      // Decision
+      const dec=document.createElement('div');dec.className='ac-decision';
+      dec.textContent=(isUp?'\u25B2 ':'\u25BC ')+sig.prediction;dec.style.color=isUp?'var(--neon-green)':'var(--neon-red)';
+      card.appendChild(dec);
+
+      // Confidence bar
+      const confDiv=document.createElement('div');confDiv.className='ac-conf';
+      const conf=sig.confidence||0;const cc=conf>65?'var(--neon-green)':conf>45?'var(--y)':'var(--neon-red)';
+      confDiv.innerHTML='<div class="cbar" style="height:4px;margin-bottom:3px"><div class="cfill" style="width:'+conf+'%;background:'+cc+'"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<span style="color:'+cc+';font-weight:700;font-family:Space Grotesk,sans-serif;font-size:13px">'+conf+'%</span>'
+        +'<span style="color:var(--t4);font-size:9px">'+(sig.risk_score||'')+'</span></div>';
+      card.appendChild(confDiv);
+
+      // Layer Alignment
+      const layerDiv=document.createElement('div');layerDiv.className='ac-layer';
+      const la=sig.layer_alignment||'';
+      if(la){
+        const laMatch=la.match(/(\d+)\/(\d+)/);
+        if(laMatch){const num=parseInt(laMatch[1]),den=parseInt(laMatch[2]);
+          const lc=num===den?'var(--neon-green)':num>=2?'var(--y)':'var(--neon-red)';
+          layerDiv.innerHTML='<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.04);color:'+lc+';font-weight:600">'+escapeHtml(la.split('->')[0].trim())+'</span>';
+        }else{layerDiv.innerHTML='<span style="font-size:9px;color:var(--t4)">'+escapeHtml(la)+'</span>'}
+      }
+      card.appendChild(layerDiv);
+    }
+
+    // Balance row — prominent display
+    const balDiv=document.createElement('div');balDiv.className='ac-balance';
+    const bal=port.balance!=null?port.balance:100;const pnl=port.total_profit||0;const wr=port.win_rate||0;const wins=port.wins||0;const losses=port.losses||0;
+    const balColor=bal>=100?'var(--neon-green)':'var(--neon-red)';
+    const pnlColor=pnl>=0?'var(--neon-green)':'var(--neon-red)';
+    const wrColor=wr>=50?'var(--neon-green)':'var(--neon-red)';
+    balDiv.innerHTML='<div class="ac-bal-main">'
+      +'<span class="ac-bal-value" style="color:'+balColor+'">$'+bal.toFixed(2)+'</span>'
+      +'<span class="ac-pnl-value" style="color:'+pnlColor+'">'+(pnl>=0?'+':'')+pnl.toFixed(2)+'</span>'
+      +'</div>'
+      +'<div class="ac-bal-stats">'
+      +'<span>'+wins+'W / '+losses+'L</span>'
+      +'<span style="color:'+wrColor+';font-weight:600">WR '+wr.toFixed(0)+'%</span>'
+      +'</div>';
+    card.appendChild(balDiv);
+    grid.appendChild(card);
+  });
+}
+
+function _updateSwarmSummary(){
+  if(!_agentsCache||!_agentsCache.length)return;
+  const active=_agentsCache.filter(a=>a.enabled);if(!active.length)return;
+  let totalBal=0,totalPnl=0,totalWr=0,wrCount=0;
+  active.forEach(a=>{const p=a.portfolio||{};totalBal+=(p.balance!=null?p.balance:100);totalPnl+=(p.total_profit||0);if((p.total_bets||0)>0){totalWr+=(p.win_rate||0);wrCount++}});
+  const avgWr=wrCount>0?totalWr/wrCount:0;
+  $('swarm-total-agents').textContent=active.length;
+  $('swarm-total-bal').textContent='$'+fm(totalBal);$('swarm-total-bal').style.color=totalBal>=(active.length*100)?'var(--neon-green)':'var(--neon-red)';
+  $('swarm-total-pnl').textContent=(totalPnl>=0?'+':'')+fm(totalPnl);$('swarm-total-pnl').style.color=totalPnl>=0?'var(--neon-green)':'var(--neon-red)';
+  $('swarm-avg-wr').textContent=avgWr.toFixed(1)+'%';$('swarm-avg-wr').style.color=avgWr>=50?'var(--neon-green)':'var(--neon-red)';
+  $('pf-tag').textContent=active.length+' IAs';
+}
+
+// ── Observer ──
+function _updateLivePulse(s){
+  const text=s.live_suggestion||'';const age=s.live_suggestion_age;const conclusion=s.live_pulse_conclusion||'';
+  if(!text||age<0)return;
+  const dot=$('pulse-dot');
+  if(age<=20){$('pulse-age').textContent='hace '+age+'s';dot.style.background='var(--neon-green)'}
+  else if(age<=45){$('pulse-age').textContent='hace '+age+'s';dot.style.background='var(--y)'}
+  else{$('pulse-age').textContent='hace '+Math.floor(age/60)+'m';dot.style.background='var(--t4)'}
+  _appendObserver(text,age);
+  const widget=$('live-pulse-widget');widget.style.display='block';
+  let displayText=text.replace(/\s*CONCLUSI[OÓ]N:.*$/i,'').trim();
+  $('pulse-widget-text').textContent=displayText||text;
+  const wdot=$('pulse-widget-dot');
+  if(age<=20)wdot.style.background='var(--neon-green)';else if(age<=45)wdot.style.background='var(--y)';else wdot.style.background='var(--t4)';
+  const cBox=$('pulse-widget-conclusion'),cDir=$('pulse-widget-dir'),cAge=$('pulse-widget-age');
+  if(conclusion){
+    cBox.style.display='block';
+    if(conclusion==='UP'){cDir.textContent='\u25B2 Subir';cDir.style.color='var(--neon-green)';widget.className='pulse-banner up'}
+    else if(conclusion==='DOWN'){cDir.textContent='\u25BC Bajar';cDir.style.color='var(--neon-red)';widget.className='pulse-banner dn'}
+    else{cDir.textContent='\u2194 Lateral';cDir.style.color='var(--y)';widget.className='pulse-banner'}
+    cAge.textContent='hace '+(age<60?age+'s':Math.floor(age/60)+'m');
+  }else{cBox.style.display='none';widget.className='pulse-banner'}
+}
+
+// ── Swarm Votes ──
+function _updateSwarmVotes(swarmState){
+  if(!_agentsCache||!_agentsCache.length){$('swarm-votes').style.display='none';return}
+  const active=_agentsCache.filter(a=>a.enabled);
+  if(active.length<=1){$('swarm-votes').style.display='none';return}
+  const votes=[];
+  active.forEach(a=>{
+    const sig=swarmState[a.agent_id]||a.last_signal||null;
+    if(sig&&sig.prediction)votes.push({name:a.display_name||a.agent_id,pred:sig.prediction,conf:sig.confidence||0,primary:!!a.is_primary});
+  });
+  if(votes.length<=1){$('swarm-votes').style.display='none';return}
+  $('swarm-votes').style.display='block';
+  const list=$('swarm-votes-list');list.innerHTML='';
+  votes.forEach(v=>{
+    const isUp=v.pred==='UP';
+    const chip=document.createElement('span');
+    chip.style.cssText='display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;border:1px solid '+(isUp?'rgba(0,255,136,.15)':'rgba(255,51,102,.15)')+';background:'+(isUp?'rgba(0,255,136,.04)':'rgba(255,51,102,.04)');
+    chip.innerHTML='<span style="color:'+(isUp?'var(--neon-green)':'var(--neon-red)')+'">'+(isUp?'\u25B2':'\u25BC')+'</span>'
+      +'<span style="color:var(--t2)">'+escapeHtml(v.name)+'</span>'
+      +'<span style="color:var(--t4);font-size:9px">'+v.conf+'%</span>';
+    list.appendChild(chip);
+  });
+}
+
+// ── Init (Fluid Timer UI: 1.5s poll + 1Hz local timer + visibilitychange robusto) ──
+let _pollInterval=null;
+let _agentsInterval=null;
+function startTimers(){
+  if(!_pollInterval) _pollInterval=setInterval(poll,1500);
+  if(!_agentsInterval) _agentsInterval=setInterval(fetchAgents,30000);
+}
+function stopTimers(){
+  if(_pollInterval){clearInterval(_pollInterval);_pollInterval=null;}
+  if(_agentsInterval){clearInterval(_agentsInterval);_agentsInterval=null;}
+}
+// ── Fluid Timer: render local independiente a 1Hz usando end_time absoluto del servidor ──
+setInterval(()=>{
+  if(!_globalServerEndTime) return;
+  const remainingSec=Math.max(0,Math.floor((_globalServerEndTime*1000-Date.now())/1000));
+  const mn2=Math.floor(remainingSec/60);
+  const sc2=remainingSec%60;
+  const t=document.getElementById('tm');
+  if(t){
+    t.textContent=mn2+':'+String(sc2).padStart(2,'0');
+    t.className='timer '+(remainingSec<30?'dng':remainingSec<60?'wrn':'nrm');
+  }
+  const t2=document.getElementById('stk-tm');
+  if(t2){
+    t2.textContent=mn2+':'+String(sc2).padStart(2,'0');
+    t2.style.color=(remainingSec<30?'var(--neon-red)':remainingSec<60?'var(--y)':'var(--neon-green)');
+  }
+},1000);
+// ── Arranque principal ──
+fetchAgents();
+poll();
+startTimers();
+window.addEventListener('beforeunload',stopTimers);
+// [FIX] El listener ahora limpia el ruido del background, PERO restablece correctamente al volver al foco
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    stopTimers();
+  }else{
+    startTimers();
+    poll(); // Fuerza resync rápido al reconectar la pestaña
+  }
+});
+{% endblock %}

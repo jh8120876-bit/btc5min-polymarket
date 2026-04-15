@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+{% block title %}BTC Predictor — Config{% endblock %}
+{% block extra_css %}
+.cfg-card{background:var(--bg);border-radius:10px;padding:14px}
+.cfg-lbl{font-size:10px;color:var(--t3);letter-spacing:1px;margin-bottom:8px;font-weight:600}
+.cfg-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--s2);font-size:12px}
+.cfg-row:last-child{border-bottom:none}
+.cfg-name{color:var(--t2);flex:1}
+.cfg-val{font-family:'Space Grotesk',sans-serif;font-weight:600;min-width:60px;text-align:right}
+.cfg-input{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;color:var(--t1);font-family:inherit;font-size:12px;width:80px;text-align:center;outline:none}
+.cfg-input:focus{border-color:var(--b)}
+.cfg-select{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;color:var(--t1);font-family:inherit;font-size:12px;outline:none;width:100%}
+.cfg-select:focus{border-color:var(--b)}
+.cfg-btn{background:var(--b);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.cfg-btn:hover{opacity:.85}
+.cfg-btn.secondary{background:var(--s2);color:var(--t1);border:1px solid var(--bd)}
+.cfg-btn.green{background:var(--g)}
+.cfg-btn.red{background:var(--r)}
+.cfg-btn:disabled{opacity:.4;cursor:not-allowed}
+.status-msg{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none}
+.excl-warn{font-size:10px;color:var(--y);background:rgba(234,179,8,.1);padding:4px 8px;border-radius:6px;margin-top:6px;display:none}
+.cfg-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--s1);padding:4px;border-radius:12px;border:1px solid var(--bd)}
+.cfg-tabs button{flex:1;background:0 0;border:1px solid transparent;color:var(--t3);padding:10px 4px;font-size:11px;font-weight:700;cursor:pointer;border-radius:8px;transition:all .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfg-tabs button:hover{color:var(--t1);background:rgba(255,255,255,.03)}
+.cfg-tabs button.active{background:var(--glass);color:var(--neon-green);border-color:var(--glass-border);box-shadow:0 0 10px rgba(0,255,136,.1)}
+.card[data-tab]{display:none;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}
+.card[data-tab].active{display:block;animation:su .3s ease;width:100%;max-width:100%}
+.cfg-card { width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+#fatigue-prompts-container, #agent-config-rows, #fatigue-agent-rows { width: 100%; overflow-x: hidden; }
+textarea.fatigue-prompt { flex: 1; min-width: 0; }
+@media (max-width: 600px) {
+  .cfg-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .cfg-val, .cfg-input { width: 100% !important; text-align: left; }
+  .cfg-tabs button { font-size: 9px; padding: 8px 4px; }
+}
+{% endblock %}
+
+{% block content %}
+  <div class="cfg-tabs">
+    <button class="active" onclick="switchCfgTab('ia',this)">🧠 IA & RIESGO</button>
+    <button onclick="switchCfgTab('swarm',this)">🐝 ENJAMBRE Y BALANCES</button>
+  </div>
+
+  <!-- ═══ CEREBRO PRINCIPAL (PRIMARY AGENT) ═══ -->
+  <div class="card active" data-tab="ia">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:15px">&#129504;</span>
+      <span style="font-size:11px;color:var(--b2);letter-spacing:1.5px;font-weight:600">CEREBRO PRINCIPAL</span>
+      <span id="primary-badge" style="font-size:9px;padding:2px 8px;border-radius:8px">--</span>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:14px">
+      <div class="cfg-lbl">PROVEEDOR DE IA</div>
+      <div class="cfg-row" style="border:none;padding:6px 0">
+        <select id="primary-provider" class="cfg-select" onchange="onPrimaryProviderChange()">
+          <option value="deepseek">DeepSeek</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="local">IA Local (Ollama / LM Studio)</option>
+        </select>
+      </div>
+
+      <div id="primary-remote-fields">
+        <div class="cfg-row">
+          <div class="cfg-name">Modelo</div>
+          <input type="text" id="primary-model" class="cfg-input" style="width:180px;text-align:left" placeholder="deepseek-chat">
+        </div>
+        <div class="cfg-row">
+          <div class="cfg-name">API Key</div>
+          <input type="password" id="primary-apikey" class="cfg-input" style="width:220px;text-align:left" placeholder="sk-...">
+        </div>
+        <div class="cfg-row">
+          <div class="cfg-name">Base URL (opcional)</div>
+          <input type="text" id="primary-baseurl" class="cfg-input" style="width:220px;text-align:left" placeholder="https://api.deepseek.com/v1">
+        </div>
+      </div>
+
+      <div id="primary-local-fields" style="display:none">
+        <div class="cfg-row">
+          <div class="cfg-name">URL del servidor local</div>
+          <input type="text" id="primary-local-url" class="cfg-input" style="width:220px;text-align:left" value="http://localhost:1234/v1">
+        </div>
+        <div class="cfg-row" style="border:none">
+          <div class="cfg-name">Modelo</div>
+          <div style="display:flex;gap:8px;align-items:center;flex:1">
+            <select id="primary-local-model" class="cfg-select" style="flex:1">
+              <option value="">Detectar modelos...</option>
+            </select>
+            <button class="cfg-btn secondary" style="padding:5px 12px;font-size:10px" onclick="detectPrimaryLocalModels()">DETECTAR</button>
+          </div>
+        </div>
+        <div id="primary-local-runtime" style="font-size:10px;color:var(--t3);margin-top:4px"></div>
+      </div>
+
+      <div id="primary-excl-warn" class="excl-warn">
+        La IA Local ya esta en uso como agente Swarm. Desactivala del Swarm antes de asignarla como Cerebro.
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button class="cfg-btn" onclick="savePrimaryAgent()">GUARDAR CEREBRO</button>
+        <div id="primary-msg" class="status-msg"></div>
+      </div>
+    </div>
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ENJAMBRE DE IAs (MULTI-AGENT SWARM) ═══ -->
+  <div class="card" data-tab="swarm">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:15px">&#129504;</span>
+      <span style="font-size:11px;color:var(--b2);letter-spacing:1.5px;font-weight:600">ENJAMBRE DE IAs (MULTI-AGENT SWARM)</span>
+      <span id="swarm-badge" style="font-size:9px;padding:2px 8px;border-radius:8px;background:rgba(99,102,241,.15);color:var(--b2)">--</span>
+    </div>
+
+    <div style="margin-bottom:10px;font-size:10px;color:var(--t3);line-height:1.5;padding:6px 10px;background:rgba(99,102,241,.05);border-radius:8px">
+      Todos los agentes heredan automaticamente el contexto RAG + Lecciones + Regimen HMM del Cerebro Principal. La diversidad proviene del modelo, no del prompt.
+    </div>
+
+    <!-- Agent Rows -->
+    <div id="agent-config-rows" style="display:flex;flex-direction:column;gap:10px">
+      <div style="text-align:center;padding:20px;color:var(--t4);font-size:11px">Cargando agentes...</div>
+    </div>
+
+    <!-- Add New Agent -->
+    <div class="cfg-card" style="margin-top:14px;border:1px dashed var(--bd)">
+      <div class="cfg-lbl">AGREGAR AGENTE AL ENJAMBRE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--t3);min-width:70px">Proveedor</span>
+          <select id="new-agent-provider" class="cfg-select" style="flex:1" onchange="onNewAgentProviderChange()">
+            <option value="deepseek">DeepSeek</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI (GPT)</option>
+            <option value="local">IA Local</option>
+          </select>
+        </div>
+        <div id="new-agent-model-row" style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--t3);min-width:70px">Modelo</span>
+          <input type="text" id="new-agent-model" class="cfg-input" style="flex:1;text-align:left" placeholder="deepseek-chat">
+        </div>
+        <div id="new-agent-local-model-row" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:10px;color:var(--t3);min-width:70px">Modelo</span>
+            <select id="new-agent-local-model" class="cfg-select" style="flex:1">
+              <option value="">Detectar modelos...</option>
+            </select>
+            <button class="cfg-btn secondary" style="padding:4px 10px;font-size:9px" onclick="detectNewAgentModels()">DETECTAR</button>
+          </div>
+        </div>
+        <div id="new-agent-key-row" style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--t3);min-width:70px">API Key</span>
+          <input type="password" id="new-agent-key" class="cfg-input" style="flex:1;text-align:left" placeholder="sk-...">
+        </div>
+        <div id="new-agent-url-row" style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--t3);min-width:70px">Base URL</span>
+          <input type="text" id="new-agent-url" class="cfg-input" style="flex:1;text-align:left" placeholder="(opcional)">
+        </div>
+        <div id="new-agent-excl-warn" class="excl-warn">
+          La IA Local ya esta asignada como Cerebro Principal. No puede estar en ambos roles.
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <button id="btn-add-agent" class="cfg-btn green" onclick="addSwarmAgent()">+ AGREGAR</button>
+        <div id="new-agent-msg" class="status-msg"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+      <button class="cfg-btn green" onclick="saveSwarmConfig()">GUARDAR CONFIGURACION</button>
+      <div id="swarm-cfg-msg" class="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══ RESET BALANCE GLOBAL IAs ═══ -->
+  <div class="card" data-tab="swarm">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:15px">&#128176;</span>
+      <span style="font-size:11px;color:var(--b2);letter-spacing:1.5px;font-weight:600">RESET BALANCE GLOBAL IAs</span>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">
+        Botón maestro único. Restablece TODAS las IAs (primaria + enjambre) al
+        monto indicado y lo persiste como <strong>Default Global</strong>, de
+        modo que cualquier IA nueva habilitada desde este panel nazca con esa
+        cifra automáticamente.
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--t2)">Monto personalizado:</span>
+        <span style="font-size:12px;font-weight:600;color:var(--t1)">$</span>
+        <input type="number" id="reset-balance" class="cfg-input" min="1" max="10000" step="1" value="25" style="width:100px">
+      </div>
+
+      <!-- ── Live Dynamic Sizing toggle ── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border-radius:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--t1)">Live Dynamic Sizing</div>
+          <div style="font-size:10px;color:var(--t3)">Kelly ingiere el balance REAL de USDC.e (py-clob-client) en vez del balance simulado.</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:40px;height:20px;cursor:pointer">
+          <input type="checkbox" id="live-sizing-toggle" style="opacity:0;width:0;height:0">
+          <span id="live-sizing-track" style="position:absolute;inset:0;background:var(--bd);border-radius:10px;transition:.3s"></span>
+          <span id="live-sizing-dot" style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s"></span>
+        </label>
+      </div>
+
+      <!-- ── Maker Ladder toggle ── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--s2);border-radius:8px;margin-bottom:14px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--t1)">Maker Ladder (Limit Orders)</div>
+          <div style="font-size:10px;color:var(--t3)">Si está apagado, emite apuestas instántaneas (Market Orders). Apágalo para apostar saldos ultra-bajos ($1.00 USD).</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:40px;height:20px;cursor:pointer">
+          <input type="checkbox" id="maker-ladder-toggle" style="opacity:0;width:0;height:0">
+          <span id="maker-ladder-track" style="position:absolute;inset:0;background:var(--bd);border-radius:10px;transition:.3s"></span>
+          <span id="maker-ladder-dot" style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s"></span>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="cfg-btn red" onclick="resetGlobalBalances()">RESET BALANCE GLOBAL IAs</button>
+        <div id="reset-msg" class="status-msg"></div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block scripts %}
+// ── Tabs ──
+function switchCfgTab(tabId, btn){
+  document.querySelectorAll('.cfg-tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.card[data-tab]').forEach(c=>{
+    if(c.dataset.tab===tabId) c.classList.add('active');
+    else c.classList.remove('active');
+  });
+}
+
+// ── State ──
+let _primaryIsLocal = false;
+const _providerDefaults = {
+  deepseek: {model:'deepseek-chat', url:'https://api.deepseek.com/v1', env:'DEEPSEEK_API_KEY'},
+  anthropic: {model:'claude-sonnet-4-6', url:'https://api.anthropic.com', env:'ANTHROPIC_API_KEY'},
+  openai: {model:'gpt-4o', url:'https://api.openai.com/v1', env:'OPENAI_API_KEY'},
+  local: {model:'', url:'http://localhost:1234/v1', env:''},
+};
+const _apiLabels={'deepseek':'DeepSeek','anthropic':'Anthropic','openai':'OpenAI','local':'IA Local'};
+
+// ── Utility ──
+function showMsg(id,text,ok){
+  const m=$(id);m.textContent=(ok?'\u2705 ':'\u274C ')+text;
+  m.style.background=ok?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)';
+  m.style.color=ok?'var(--g)':'var(--r)';m.style.display='inline-block';
+  setTimeout(()=>m.style.display='none',4000);
+}
+
+// ═══ PRIMARY AGENT ═══
+async function loadPrimaryAgent(){
+  try{
+    const r=await fetch('/api/primary_agent');const d=await r.json();
+    if(d.error)return;
+    const prov=d.api_type||'deepseek';
+    $('primary-provider').value=prov;
+    onPrimaryProviderChange();
+    _primaryIsLocal = prov === 'local';
+    if(prov==='local'){
+      $('primary-local-url').value=d.api_base_url||'http://localhost:1234/v1';
+    }else{
+      $('primary-model').value=d.model||'';
+      $('primary-baseurl').value=d.api_base_url||'';
+    }
+    const b=$('primary-badge');
+    const label=(_apiLabels[prov]||prov)+' / '+(d.model||'?');
+    if(d.has_api_key||prov==='local'){
+      b.textContent=label;b.style.background='rgba(16,185,129,.15)';b.style.color='var(--g)';
+    }else{
+      b.textContent='SIN API KEY';b.style.background='rgba(239,68,68,.15)';b.style.color='var(--r)';
+    }
+    // Enforce exclusivity UI
+    enforceExclusivity();
+  }catch(e){console.error('loadPrimaryAgent',e)}
+}
+function onPrimaryProviderChange(){
+  const prov=$('primary-provider').value;
+  const isLocal=prov==='local';
+  $('primary-remote-fields').style.display=isLocal?'none':'block';
+  $('primary-local-fields').style.display=isLocal?'block':'none';
+  if(!isLocal){
+    const def=_providerDefaults[prov]||{};
+    $('primary-model').placeholder=def.model||'';
+    $('primary-baseurl').placeholder=def.url||'';
+  }
+}
+async function detectPrimaryLocalModels(){
+  const url=$('primary-local-url').value.trim()||'http://localhost:1234/v1';
+  try{
+    // Temporarily set the URL so the backend fetches from it
+    const r=await fetch('/api/local_llm/models');const d=await r.json();
+    if(d.available){
+      const sel=$('primary-local-model');sel.innerHTML='<option value="">Seleccionar...</option>';
+      d.models.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o)});
+      $('primary-local-runtime').textContent='Servidor detectado';
+      $('primary-local-runtime').style.color='var(--g)';
+    }else{
+      $('primary-local-runtime').textContent='Servidor no encontrado';
+      $('primary-local-runtime').style.color='var(--r)';
+    }
+  }catch(e){$('primary-local-runtime').textContent='Error de conexion';$('primary-local-runtime').style.color='var(--r)'}
+}
+async function savePrimaryAgent(){
+  const prov=$('primary-provider').value;
+  const isLocal=prov==='local';
+  let body={api_type:prov};
+  if(isLocal){
+    body.model=$('primary-local-model').value;
+    body.api_base_url=$('primary-local-url').value.trim();
+    if(!body.model){showMsg('primary-msg','Selecciona un modelo local',false);return}
+  }else{
+    body.model=$('primary-model').value.trim()||_providerDefaults[prov]?.model||'';
+    body.api_key=$('primary-apikey').value.trim();
+    body.api_base_url=$('primary-baseurl').value.trim()||null;
+    body.api_key_env=_providerDefaults[prov]?.env||'';
+    if(!body.model){showMsg('primary-msg','Especifica un modelo',false);return}
+  }
+  body.display_name=(_apiLabels[prov]||prov)+' '+body.model;
+  try{
+    const r=await fetch('/api/primary_agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.ok){
+      showMsg('primary-msg','Cerebro Principal actualizado: '+d.agent_id,true);
+      _primaryIsLocal=isLocal;
+      loadPrimaryAgent();loadAgentConfig();enforceExclusivity();
+    }else{showMsg('primary-msg',d.error||'Error',false)}
+  }catch(e){showMsg('primary-msg','Error de red',false)}
+}
+
+// ═══ AI CONFIG ═══
+async function loadAIConfig(){
+  try{
+    const r=await fetch('/api/config');const d=await r.json();
+    $('cfg-min-conf').value=d.min_confidence;
+    $('cfg-early-thresh').value=d.early_bet_threshold;
+    $('cfg-max-bet').value=(d.max_bet_pct*100).toFixed(1);
+    $('cfg-high-risk-conf').value=d.high_risk_min_conf;
+    $('cfg-trust').textContent=d.trust_score.toFixed(0);
+    $('cfg-trust').style.color=d.trust_score>=65?'var(--g)':d.trust_score>=40?'var(--y)':'var(--r)';
+    $('cfg-mult').textContent='x'+d.bet_multiplier.toFixed(1);
+    $('cfg-sessions').textContent=d.sessions;
+    $('cfg-lessons').textContent=d.lessons_count;
+  }catch(e){console.error(e)}
+}
+async function saveAIConfig(){
+  const body={
+    min_confidence:parseInt($('cfg-min-conf').value),
+    early_bet_threshold:parseInt($('cfg-early-thresh').value),
+    max_bet_pct:parseFloat($('cfg-max-bet').value)/100,
+    high_risk_min_conf:parseInt($('cfg-high-risk-conf').value)
+  };
+  try{
+    const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.ok){showMsg('ai-cfg-msg','Guardado',true)}
+    else{showMsg('ai-cfg-msg',d.error||'Error',false)}
+    loadAIConfig();
+  }catch(e){showMsg('ai-cfg-msg','Error de red',false)}
+}
+
+// ═══ EXCLUSIVITY ENFORCEMENT ═══
+function enforceExclusivity(){
+  // If primary is local, disable "local" in new-agent dropdown and show warning
+  const addBtn=$('btn-add-agent');
+  const newProv=$('new-agent-provider');
+  const warn=$('new-agent-excl-warn');
+  if(_primaryIsLocal && newProv.value==='local'){
+    warn.style.display='block';
+    addBtn.disabled=true;
+  }else{
+    warn.style.display='none';
+    addBtn.disabled=false;
+  }
+  // Mark local option in new-agent dropdown
+  Array.from(newProv.options).forEach(opt=>{
+    if(opt.value==='local'){
+      opt.disabled=_primaryIsLocal;
+      opt.textContent=_primaryIsLocal?'IA Local (EN USO COMO CEREBRO)':'IA Local';
+    }
+  });
+}
+
+// ═══ SWARM AGENTS ═══
+function onNewAgentProviderChange(){
+  const prov=$('new-agent-provider').value;
+  const isLocal=prov==='local';
+  $('new-agent-model-row').style.display=isLocal?'none':'flex';
+  $('new-agent-local-model-row').style.display=isLocal?'block':'none';
+  $('new-agent-key-row').style.display=isLocal?'none':'flex';
+  $('new-agent-url-row').style.display=isLocal?'none':'flex';
+  if(!isLocal){
+    $('new-agent-model').placeholder=_providerDefaults[prov]?.model||'';
+  }
+  enforceExclusivity();
+}
+async function detectNewAgentModels(){
+  try{
+    const r=await fetch('/api/local_llm/models');const d=await r.json();
+    if(d.available){
+      const sel=$('new-agent-local-model');sel.innerHTML='<option value="">Seleccionar...</option>';
+      d.models.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.id;sel.appendChild(o)});
+    }
+  }catch(e){}
+}
+async function addSwarmAgent(){
+  const prov=$('new-agent-provider').value;
+  const isLocal=prov==='local';
+  const model=isLocal?$('new-agent-local-model').value:($('new-agent-model').value.trim()||_providerDefaults[prov]?.model||'');
+  const apiKey=isLocal?'':$('new-agent-key').value.trim();
+  const baseUrl=isLocal?(_providerDefaults.local.url):$('new-agent-url').value.trim();
+  if(!model){showMsg('new-agent-msg','Especifica un modelo',false);return}
+  if(!isLocal&&!apiKey){showMsg('new-agent-msg','Se requiere API Key',false);return}
+  const agentId=(prov+'_'+model).replace(/[^a-zA-Z0-9_]/g,'_').substring(0,30);
+  const body={
+    api_type:prov,
+    model:model,
+    agent_id:agentId,
+    display_name:(_apiLabels[prov]||prov)+' '+model,
+    api_key:apiKey,
+    api_key_env:_providerDefaults[prov]?.env||'',
+    api_base_url:baseUrl||null,
+  };
+  try{
+    // Add via save_config with the new agent
+    const rulesR=await fetch('/api/rules');const rules=await rulesR.json();
+    const agents=rules.agents||{};
+    // initial_balance intentionally omitted — backend auto-injects the
+    // current Global Default (dynamic_rules.defaults.initial_balance)
+    // on first save so new IAs are born with the panel's preset.
+    agents[agentId]={
+      enabled:true,display_name:body.display_name,model:model,api_type:prov,
+      api_key_env:body.api_key_env,api_base_url:body.api_base_url,
+      strategy:'shared_rag',is_primary:false
+    };
+    const saveBody={agents:{}};
+    saveBody.agents[agentId]={enabled:true};
+    if(apiKey)saveBody.agents[agentId].api_key=apiKey;
+    // Write full agent to rules file
+    const r=await fetch('/api/save_config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveBody)});
+    const d=await r.json();
+    if(d.ok){showMsg('new-agent-msg','Agente agregado: '+agentId,true);loadAgentConfig()}
+    else{showMsg('new-agent-msg',d.error||'Error',false)}
+  }catch(e){showMsg('new-agent-msg','Error de red',false)}
+}
+
+async function loadAgentConfig(){
+  try{
+    const r=await fetch('/api/agents');const agents=await r.json();
+    const container=$('agent-config-rows');
+    container.innerHTML='';
+    let activeCount=0;
+    agents.filter(a=>!a.is_primary).forEach(a=>{
+      if(a.enabled)activeCount++;
+      const port=a.portfolio||{};
+      const isLocalAgent=a.api_type==='local';
+      const blocked=_primaryIsLocal&&isLocalAgent;
+      const div=document.createElement('div');
+      div.className='cfg-card';
+      div.style.border='1px solid '+(blocked?'var(--r)':a.enabled?'var(--b)':'var(--bd)');
+      div.style.opacity=blocked?'0.5':a.enabled?'1':'0.7';
+      div.innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <span style="font-size:12px;font-weight:700;color:var(--t1)">${escapeHtml(a.display_name||a.agent_id)}</span>
+            <span style="font-size:9px;color:var(--t4);margin-left:6px">${escapeHtml(_apiLabels[a.api_type]||a.api_type)} / ${escapeHtml(a.model)}</span>
+            ${blocked?'<span style="font-size:9px;color:var(--r);margin-left:6px;font-weight:600">BLOQUEADO (CPU exclusiva)</span>':''}
+          </div>
+          <label style="position:relative;display:inline-block;width:40px;height:20px;cursor:${blocked?'not-allowed':'pointer'}">
+            <input type="checkbox" class="agent-toggle" data-agent="${a.agent_id}" ${a.enabled&&!blocked?'checked':''} ${blocked?'disabled':''} style="opacity:0;width:0;height:0">
+            <span style="position:absolute;inset:0;background:${a.enabled&&!blocked?'var(--g)':'var(--bd)'};border-radius:10px;transition:.3s"></span>
+            <span style="position:absolute;top:2px;left:${a.enabled&&!blocked?'22':'2'}px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s"></span>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="font-size:10px;color:var(--t3);min-width:55px">API Key</span>
+          <input type="password" class="cfg-input agent-key" data-agent="${escapeHtml(a.agent_id)}" data-env="${escapeHtml(a.api_key_env||'')}"
+                 placeholder="${a.has_api_key?'(configurada)':'Pegar API key...'}"
+                 style="flex:1;width:auto;text-align:left" ${isLocalAgent?'disabled':''}>
+          <span style="font-size:9px;color:${a.has_api_key||isLocalAgent?'var(--g)':'var(--r)'}">${isLocalAgent?'LOCAL':a.has_api_key?'OK':'SIN KEY'}</span>
+        </div>
+        <div style="display:flex;gap:12px;font-size:10px;color:var(--t3);flex-wrap:wrap">
+          <span>Balance: <strong style="color:${(port.balance||0)>=(port.initial_balance||25)?'var(--g)':'var(--r)'}">$${(port.balance||port.initial_balance||25).toFixed(2)}</strong></span>
+          <span>Bets: ${port.total_bets||0}</span>
+          <span>WR: ${(port.win_rate||0).toFixed(0)}%</span>
+          <span>PnL: <span style="color:${(port.total_profit||0)>=0?'var(--g)':'var(--r)'}">$${(port.total_profit||0).toFixed(2)}</span></span>
+          ${port.is_fatigued?'<span style="background:rgba(239,68,68,.15);color:var(--r);padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600">FATIGADO</span>':''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    if(!agents.filter(a=>!a.is_primary).length){
+      container.innerHTML='<div style="text-align:center;padding:20px;color:var(--t4);font-size:11px">Sin agentes secundarios. Agrega uno abajo.</div>';
+    }
+    $('swarm-badge').textContent=activeCount+' ACTIVO'+(activeCount!==1?'S':'');
+    // Wire up toggle visual feedback
+    container.querySelectorAll('.agent-toggle').forEach(cb=>{
+      cb.addEventListener('change',function(){
+        const span=this.nextElementSibling;
+        const dot=span.nextElementSibling;
+        span.style.background=this.checked?'var(--g)':'var(--bd)';
+        dot.style.left=this.checked?'22px':'2px';
+        this.closest('.cfg-card').style.opacity=this.checked?'1':'0.7';
+        this.closest('.cfg-card').style.borderColor=this.checked?'var(--b)':'var(--bd)';
+      });
+    });
+  }catch(e){console.error('loadAgentConfig',e)}
+}
+
+async function saveSwarmConfig(){
+  const agentsPayload={};
+  document.querySelectorAll('.agent-toggle').forEach(cb=>{
+    const aid=cb.dataset.agent;
+    agentsPayload[aid]={enabled:cb.checked};
+  });
+  document.querySelectorAll('.agent-key').forEach(inp=>{
+    const aid=inp.dataset.agent;
+    const key=inp.value.trim();
+    if(key&&agentsPayload[aid]){agentsPayload[aid].api_key=key}
+  });
+  try{
+    const r=await fetch('/api/save_config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agents:agentsPayload})});
+    const d=await r.json();
+    if(d.ok){showMsg('swarm-cfg-msg','Configuracion guardada ('+d.active_agents+' agentes activos)',true);loadAgentConfig()}
+    else{showMsg('swarm-cfg-msg',d.error||'Error',false)}
+  }catch(e){showMsg('swarm-cfg-msg','Error de red',false)}
+}
+
+// ═══ RESET BALANCE GLOBAL IAs ═══
+async function loadResetAgents(){
+  // Load current Global Default + Live Dynamic Sizing state into the UI.
+  try{
+    const r=await fetch('/api/live_dynamic_sizing');const d=await r.json();
+    const inp=$('reset-balance');
+    if(inp && d.default_initial_balance){inp.value=d.default_initial_balance}
+    const cb=$('live-sizing-toggle');
+    if(cb){
+      cb.checked=!!d.enabled;
+      const track=$('live-sizing-track');const dot=$('live-sizing-dot');
+      if(track)track.style.background=cb.checked?'var(--g)':'var(--bd)';
+      if(dot)dot.style.left=cb.checked?'22px':'2px';
+      cb.addEventListener('change',async function(){
+        try{
+          const rr=await fetch('/api/toggle_live_dynamic_sizing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:this.checked})});
+          const dd=await rr.json();
+          if(track)track.style.background=this.checked?'var(--g)':'var(--bd)';
+          if(dot)dot.style.left=this.checked?'22px':'2px';
+          showMsg('reset-msg','Live Dynamic Sizing '+(dd.enabled?'ON':'OFF'),true);
+        }catch(e){showMsg('reset-msg','Error toggling Live Sizing',false)}
+      });
+    }
+
+    const cbLadder=$('maker-ladder-toggle');
+    if(cbLadder && d.ladder_enabled !== undefined){
+      cbLadder.checked=!!d.ladder_enabled;
+      const lTrack=$('maker-ladder-track');const lDot=$('maker-ladder-dot');
+      if(lTrack)lTrack.style.background=cbLadder.checked?'var(--g)':'var(--bd)';
+      if(lDot)lDot.style.left=cbLadder.checked?'22px':'2px';
+      cbLadder.addEventListener('change',async function(){
+        this.disabled = true;
+        try{
+          const rr=await fetch('/api/toggle_maker_ladder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:this.checked})});
+          const dd=await rr.json();
+          if(lTrack)lTrack.style.background=this.checked?'var(--g)':'var(--bd)';
+          if(lDot)lDot.style.left=this.checked?'22px':'2px';
+          showMsg('reset-msg','Maker Ladder '+(dd.enabled?'ON':'OFF'),true);
+        }catch(e){showMsg('reset-msg','Error toggling Maker Ladder',false)}
+        this.disabled = false;
+      });
+    }
+  }catch(e){console.error('loadResetAgents',e)}
+}
+
+async function resetGlobalBalances(){
+  const bal=parseFloat($('reset-balance').value)||25;
+  if(!confirm('RESET BALANCE GLOBAL IAs\n\nEsto reseteará TODAS las IAs a $'+bal.toFixed(2)+' y guardará este monto como Default Global (cualquier IA nueva nacerá con este saldo).\n\n¿Continuar?'))return;
+  try{
+    const r=await fetch('/api/agents/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({balance:bal})});
+    const d=await r.json();
+    if(d.ok){
+      showMsg('reset-msg','GLOBAL RESET → '+d.reset_count+' IAs a $'+d.new_balance.toFixed(2)+' (default persistido)',true);
+      loadAgentConfig();
+    }else{showMsg('reset-msg',d.error||'Error',false)}
+  }catch(e){showMsg('reset-msg','Error de red',false)}
+}
+
+// Legacy shims — harmless no-ops so older cached calls don't throw.
+async function resetOneAgent(agentId,name){return resetGlobalBalances()}
+async function resetAllBalances(){return resetGlobalBalances()}
+
+// ═══ RULES ═══
+async function reloadRules(){
+  try{
+    const r=await fetch('/api/reload_rules',{method:'POST'});const d=await r.json();
+    if(d.ok){showMsg('rules-msg','Reglas recargadas (v'+d.version+')',true);$('rules-version').textContent='v'+d.version;$('rules-sections').textContent='Secciones: '+d.sections.join(', ');$('rules-sections').style.display='block'}
+    else{showMsg('rules-msg',d.error||'Error',false)}
+  }catch(e){showMsg('rules-msg','Error de red',false)}
+}
+async function loadRulesInfo(){
+  try{
+    const r=await fetch('/api/rules');const d=await r.json();
+    $('rules-version').textContent='v'+((d._meta||{}).version||'?');
+    $('rules-sections').textContent='Secciones: '+Object.keys(d).filter(k=>k!=='_meta').join(', ');
+    $('rules-sections').style.display='block';
+  }catch(e){}
+}
+
+// ═══ BOOT ═══
+loadPrimaryAgent();loadAIConfig();loadRulesInfo();loadAgentConfig();loadResetAgents();
+{% endblock %}

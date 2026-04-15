@@ -1,0 +1,16 @@
+{
+  "strategy_name": "5m Algorithmic SMC (joshyattridge Model)",
+  "concept_family": "SMC | Algorithmic Python",
+  "optimal_context": {
+    "sentiment": "neutral",
+    "volatility": "high",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Detección de Liquidez Algorítmica: Ejecutar la función de 'Swing Highs/Lows' en el DataFrame de 5m para identificar niveles matemáticos de liquidez.",
+    "Cacería (Sweep): Esperar a que el precio actual rompa ese nivel de liquidez calculado y luego cierre rápidamente dentro del rango anterior.",
+    "Validación de FVG: Confirmar la formación de un Fair Value Gap (FVG) en la dirección opuesta mediante el algoritmo.",
+    "Retraso de Entrada: Medir el porcentaje de retroceso desde el último swing. Colocar la orden límite exactamente en el nivel 'Top' o 'Bottom' del FVG."
+  ],
+  "invalidation_condition": "El precio cierra una vela completa de 5m más allá del nivel absoluto (High/Low) que generó el sweep de liquidez inicial."
+}

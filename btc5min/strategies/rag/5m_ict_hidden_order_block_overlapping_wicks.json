@@ -1,0 +1,17 @@
+{
+  "strategy_name": "5m ICT Hidden Order Block (Overlapping Wicks)",
+  "concept_family": "ICT | Order Block",
+  "optimal_context": {
+    "sentiment": "trending",
+    "volatility": "medium-high",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Identificar impulso: Buscar dos velas consecutivas del mismo color con fuerte volumen a favor de la tendencia principal.",
+    "Mapear el Hidden OB: Medir el solapamiento entre la mecha superior de la vela 1 y la mecha inferior de la vela 2. Esta intersección es el Hidden Order Block.",
+    "Esperar el retroceso: Aguardar a que la acción del precio regrese (pullback) exactamente hacia esta zona de mechas solapadas.",
+    "Gatillo de confirmación: Al tocar el Hidden OB, esperar un CHoCH o MSS inmediato a favor de la tendencia.",
+    "Ejecución: Entrar a mercado o con orden límite en cuanto se confirme el CHoCH."
+  ],
+  "invalidation_condition": "El precio atraviesa con fuerza y cierra una vela de 5m más allá del límite extremo del Hidden Order Block."
+}

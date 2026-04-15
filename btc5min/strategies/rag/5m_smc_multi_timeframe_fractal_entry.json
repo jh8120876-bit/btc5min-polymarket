@@ -1,0 +1,16 @@
+{
+  "strategy_name": "5m SMC Multi-Timeframe Fractal Entry",
+  "concept_family": "SMC",
+  "optimal_context": {
+    "sentiment": "trending",
+    "volatility": "medium",
+    "market_phase": "trending"
+  },
+  "entry_rules": [
+    "Alineación mayor: Identificar la tendencia principal y un Order Block (OB) válido en un marco temporal superior (ej. 15m o 1H).",
+    "Confirmación de manipulación: Esperar a que el precio en velas de 5m haga un Liquidity Sweep (barrido de liquidez) exactamente al tocar la zona del OB mayor.",
+    "Gatillo de entrada: Observar la formación de una vela con fuerte impulso (Engulfing o Pin Bar) en 5m que deje un Fair Value Gap (FVG).",
+    "Ejecución: Entrar mediante una orden límite en el retesteo exacto de ese FVG en la gráfica de 5m."
+  ],
+  "invalidation_condition": "Stop Loss fijo por debajo/encima del Order Block mayor. Al alcanzar el primer objetivo de liquidez local, cerrar el 50% y mover SL a Break-Even."
+}
