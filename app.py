@@ -31,8 +31,9 @@ def main():
     engine = get_engine()
     engine.start()
     app = create_app()
-    host = os.environ.get("BTC5MIN_HOST", "127.0.0.1")
-    app.run(host=host, port=5000, debug=False, use_reloader=False)
+    host = "0.0.0.0"
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host=host, port=port, debug=False, use_reloader=False)
 
 
 if __name__ == "__main__":
